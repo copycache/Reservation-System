@@ -1,0 +1,43 @@
+<?php
+
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+
+use App\Http\Controllers\HomeController;
+
+use App\Http\Controllers\admin\BookingController;
+use App\Http\Controllers\admin\DashboardController;
+use App\Http\Controllers\admin\CourtController;
+use App\Http\Controllers\admin\PricingController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
+
+Route::post('/register', [RegisteredUserController::class, 'register']);
+Route::post('/login', [AuthenticatedSessionController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthenticatedSessionController::class, 'logout']);
+});
+
+Route::get('/home_bookings', [HomeController::class, 'index']);
+Route::post('/home_bookings', [HomeController::class, 'store']);
+
+Route::group(['middleware' => ['auth:api', 'admin']], function () {
+    // admin
+    Route::get('admin/dashboard_bookings', [DashboardController::class, 'index']);
+    Route::get('admin/dashboard_bookingsSlot', [DashboardController::class, 'show']);
+
+    // Route::get('admin/bookingSlot', [BookingController::class, 'index']);
+    // Route::get('admin/bookingSlot/{bookingSlot}', [BookingController::class, 'show']);
+    // Route::get('admin/bookingSlot/update/{id}', [BookingController::class, 'update']);
+
+    Route::apiResource('admin/booking', BookingController::class);
+
+    Route::apiResource('admin/courts', CourtController::class);
+
+    Route::apiResource('admin/pricings', PricingController::class);
+});

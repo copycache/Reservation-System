@@ -26,7 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/home_bookings', [HomeController::class, 'index']);
 Route::post('/home_bookings', [HomeController::class, 'store']);
 
-Route::group(['middleware' => ['auth:api', 'admin']], function () {
+Route::group(['middleware' => ['auth:sanctum', 'role:admin']], function () {
     // admin
     Route::get('admin/dashboard_bookings', [DashboardController::class, 'index']);
     Route::get('admin/dashboard_bookingsSlot', [DashboardController::class, 'show']);

@@ -21,6 +21,42 @@ import { ViewBooking } from "@/components/admin/booking/view-booking";
 import { formatDate } from "@/lib/format_date";
 import { formatTime } from "@/lib/format_time";
 
+/**
+ * Compute and format the total duration across all booking slots.
+ * Each slot contributes (end_time - start_time) minutes.
+ * Handles midnight-crossing slots where end_time "00:00:00" = next midnight.
+ * Returns a human-readable string e.g. "1 hr", "30 min", "1 hr 30 min".
+ */
+function formatDuration(
+  slots: { start_time: string; end_time: string }[],
+): string {
+  if (!slots || slots.length === 0) return "—";
+
+  const toMinutes = (time: string) => {
+    const [h, m] = time.split(":").map(Number);
+    return h * 60 + (m || 0);
+  };
+
+  const totalMinutes = slots.reduce((sum, slot) => {
+    const start = toMinutes(slot.start_time);
+    const end = toMinutes(slot.end_time);
+    // Midnight crossing: end "00:00" means 24 * 60
+    const endMins = end === 0 ? 24 * 60 : end;
+    return sum + (endMins - start);
+  }, 0);
+
+  if (totalMinutes <= 0) return "—";
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours > 0 && minutes > 0)
+    return `${hours} hr ${minutes} min`;
+  if (hours > 0)
+    return `${hours} hr${hours > 1 ? "s" : ""}`;
+  return `${minutes} min`;
+}
+
 type Booking = any;
 
 type BookingFormProps = {
@@ -58,9 +94,9 @@ export function BookingTable({ tabValue }: BookingFormProps) {
   const [bookings, setBookingSlots] = useState<Booking[]>([]);
   const loadBookingSlots = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/booking`,
-      );
+      const response = await fetch("/api/admin/booking", {
+        headers: { Accept: "application/json" },
+      });
       const slots = await response.json();
       setBookingSlots(slots);
     } catch {
@@ -140,7 +176,7 @@ export function BookingTable({ tabValue }: BookingFormProps) {
                     </TableCell>
 
                     <TableCell className="w-[110px] px-4 text-center whitespace-nowrap">
-                      Duration
+                      {formatDuration(booking.booking_slots)}
                     </TableCell>
                     <TableCell className="w-[100px] px-4 text-center">
                       Players

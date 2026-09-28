@@ -42,16 +42,14 @@ export async function loginAction(
 
   const cookieStore = await cookies();
 
-  // HTTP-only cookie — used by middleware to protect routes
   cookieStore.set("auth_token", data.token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 1 week
+    maxAge: 60 * 60 * 24 * 7,
   });
 
-  // Store the first role for client-side use (non-sensitive)
   const role = data.role?.[0] ?? "user";
   cookieStore.set("user_role", role, {
     httpOnly: false,

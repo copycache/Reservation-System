@@ -19,9 +19,23 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { PricingForm } from "@/components/admin/pricing/pricing-form";
+import { formatTime } from "@/lib/format_time";
 
 export default function PricingPage() {
   const [tabValue, setTabValue] = useState("all");
+
+  // ── 3.5 Shared refresh key: incrementing it causes PricingTable to re-fetch ──
+  const [refreshKey, setRefreshKey] = useState(0);
+  const triggerRefresh = () => setRefreshKey((k) => k + 1);
+
+  // ── 3.5 Create dialog open state ─────────────────────────────────────────
+  const [createOpen, setCreateOpen] = useState(false);
+
+  function handleCreateSuccess() {
+    setCreateOpen(false);
+    triggerRefresh();
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-4">
       <div className="grid auto-rows-min gap-4 md:grid-cols-3">
@@ -39,16 +53,20 @@ export default function PricingPage() {
                 <TabsTrigger value="unavailable">Unavailable</TabsTrigger>
               </TabsList>
 
-              <Dialog>
+              {/* ── 3.5 Controlled dialog so we can close it from onSuccess ── */}
+              <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                 <DialogTrigger
-                  render={<Button variant="default">Create New pricing</Button>}
+                  render={<Button variant="default">Create New Pricing</Button>}
                 />
 
-                <PricingForm formType={"create"} />
+                <PricingForm
+                  formType="create"
+                  onSuccess={handleCreateSuccess}
+                />
               </Dialog>
             </div>
 
-            <PricingTable tabValue={tabValue} />
+            <PricingTable tabValue={tabValue} refreshKey={refreshKey} onRefresh={triggerRefresh} />
           </Tabs>
         </div>
       </div>
@@ -58,23 +76,43 @@ export default function PricingPage() {
 
 type pricings = any;
 
-export function PricingTable({ tabValue }: { tabValue: string }) {
+export function PricingTable({
+  tabValue,
+  refreshKey,
+  onRefresh,
+}: {
+  tabValue: string;
+  refreshKey: number;
+  onRefresh: () => void;
+}) {
   const [pricings, setPricings] = useState<pricings[]>([]);
+
+  // ── Per-row dialog open state keyed by pricing_rule_id ───────────────────
+  const [openDialogId, setOpenDialogId] = useState<number | null>(null);
+
   const loadPricings = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/pricings`,
-      );
+      // Relative URL — Next.js rewrites /api/* → Laravel.
+      // The middleware injects the auth_token cookie as a Bearer header automatically.
+      const response = await fetch("/api/admin/pricings", {
+        headers: { Accept: "application/json" },
+      });
       const result = await response.json();
       setPricings(result);
     } catch {
-    } finally {
+      // silently fail — keep the list empty
     }
   }, []);
 
   useEffect(() => {
     loadPricings();
-  }, [loadPricings]);
+  }, [loadPricings, refreshKey]);
+
+  function handleEditSuccess() {
+    setOpenDialogId(null);
+    onRefresh();
+  }
+
   return (
     <TabsContent value={tabValue} className="mt-4">
       <div className="w-full">
@@ -110,51 +148,81 @@ export function PricingTable({ tabValue }: { tabValue: string }) {
 
             <TableBody>
               {pricings
-                .filter((pricing) => tabValue === "all" || pricing.is_active === tabValue)
-                .map((pricing) => (
-                  <TableRow
-                    key={pricing.pricing_rule_id}
-                    className="odd:bg-muted/50 odd:hover:bg-muted/50 hover:bg-transparent"
-                  >
-                    <TableCell className="px-4 font-medium">
-                      <div className="truncate">{pricing.name}</div>
-                    </TableCell>
+                .filter(
+                  (pricing) =>
+                    tabValue === "all" || pricing.is_active === tabValue,
+                )
+                .map((pricing) => {
+                  // Derive display values from the API shape
+                  const schedules: { day_of_week: string; start_time: string; end_time: string }[] =
+                    pricing.pricing_rule_schedules ?? [];
 
-                    <TableCell className="px-4">
-                      <div className="truncate">{pricing.type}</div>
-                    </TableCell>
+                  const days = schedules
+                    .map((s: { day_of_week: string }) => s.day_of_week.charAt(0).toUpperCase() + s.day_of_week.slice(1))
+                    .join(", ");
 
-                    <TableCell className="px-4">
-                      <div className="truncate">days</div>
-                    </TableCell>
+                  const firstSchedule = schedules[0];
+                  const timeRange = firstSchedule
+                    ? `${formatTime(firstSchedule.start_time)} – ${formatTime(firstSchedule.end_time)}`
+                    : "—";
 
-                    <TableCell className="px-4 text-center">
-                      {pricing.price}
-                    </TableCell>
-                    
-                    <TableCell className="px-4 text-center">
-                      {pricing.is_active}
-                    </TableCell>
+                  const statusLabel = pricing.is_active ? "Active" : "Closed";
 
-                    <TableCell className="px-4 text-right">
-                      <Dialog>
-                        <DialogTrigger
-                          render={
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="ml-auto size-8"
-                            >
-                              <EllipsisVertical className="size-4" />
-                            </Button>
+                  return (
+                    <TableRow
+                      key={pricing.pricing_rule_id}
+                      className="odd:bg-muted/50 odd:hover:bg-muted/50 hover:bg-transparent"
+                    >
+                      <TableCell className="px-4 font-medium">
+                        <div className="truncate">{pricing.name}</div>
+                      </TableCell>
+
+                      <TableCell className="px-4">
+                        <div className="truncate">{timeRange}</div>
+                      </TableCell>
+
+                      <TableCell className="px-4">
+                        <div className="truncate">{days || "—"}</div>
+                      </TableCell>
+
+                      <TableCell className="px-4 text-center">
+                        ₱{Number(pricing.price).toFixed(0)}/hr
+                      </TableCell>
+
+                      <TableCell className="px-4 text-center">
+                        {statusLabel}
+                      </TableCell>
+
+                      <TableCell className="px-4 text-right">
+                        {/* ── 3.5 Controlled dialog per row ─────────────── */}
+                        <Dialog
+                          open={openDialogId === pricing.pricing_rule_id}
+                          onOpenChange={(open) =>
+                            setOpenDialogId(open ? pricing.pricing_rule_id : null)
                           }
-                        />
+                        >
+                          <DialogTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="ml-auto size-8"
+                              >
+                                <EllipsisVertical className="size-4" />
+                              </Button>
+                            }
+                          />
 
-                        <PricingForm formType={"view"} pricingId={pricing.pricing_rule_id} />
-                      </Dialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          <PricingForm
+                            formType="edit"
+                            pricingId={pricing.pricing_rule_id}
+                            onSuccess={handleEditSuccess}
+                          />
+                        </Dialog>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
             </TableBody>
           </Table>
         </div>

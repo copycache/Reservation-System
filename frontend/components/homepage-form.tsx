@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -24,19 +25,73 @@ type BookingSlot = {
   subtotal: number;
 };
 
-type BookingFormProps = {
-  data: Map<string, BookingSlot>;
-  onBookingSubmitted: () => void;
+type ExistingSlot = {
+  date: string;
+  start_time: string;
+  end_time: string;
+  court_id?: number | null;
+  status?: string;
+  bookings?: { status?: string } | null;
 };
 
-export function HomepageForm({ data, onBookingSubmitted }: BookingFormProps) {
+type BookingFormProps = {
+  data: Map<string, BookingSlot>;
+  bookingSlots?: ExistingSlot[];
+  onBookingSubmitted: () => void;
+  formType?: string;
+};
+
+export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, formType }: BookingFormProps) {
+  console.log(formType);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [courts, setCourts] = useState<any[]>([]);
+  const [selectedCourt, setSelectedCourt] = useState<string>("");
+
+  useEffect(() => {
+    async function loadCourts() {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/public/courts`);
+        if (res.ok) {
+          const data = await res.json();
+          setCourts(data);
+          if (data.length === 1) {
+            setSelectedCourt(data[0].court_id.toString());
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load courts", err);
+      }
+    }
+    loadCourts();
+  }, []);
+
+  // Compute which court IDs are unavailable for the selected slots.
+  // A court is "booked" if any existing non-cancelled slot overlaps
+  // with any of the user's selected date + time combinations.
+  const selectedSlotList = Array.from(data.values());
+  const bookedCourtIds = new Set(
+    bookingSlots
+      .filter((existing) => {
+        if (!existing.court_id) return false;
+        // 'bookings' is the JSON key Laravel uses (matches the method name on BookingSlot model)
+        if (existing.bookings?.status === "cancelled") return false;
+        if (!existing.status || existing.status === "open") return false;
+        return selectedSlotList.some(
+          (sel) =>
+            sel.date === existing.date &&
+            sel.start_time === existing.start_time &&
+            sel.end_time === existing.end_time,
+        );
+      })
+      .map((existing) => existing.court_id as number),
+  );
 
   const [customerName, setCustomerName] = useState("");
   const [bookingNumber, setBookingNumber] = useState("");
   const [submittedSlots, setSubmittedSlots] = useState<BookingSlot[]>([]);
   const [submittedTotal, setSubmittedTotal] = useState(0);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   const slots = Array.from(data.values());
 
@@ -46,41 +101,23 @@ export function HomepageForm({ data, onBookingSubmitted }: BookingFormProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setBookingError(null);
 
     const formData = new FormData(event.currentTarget);
 
     const name = String(formData.get("name") || "");
     const fbName = String(formData.get("fb_name") || "");
     const email = String(formData.get("email") || "");
-    const payment = formData.get("payment") as File;
+    const payment = formData.get("payment");
 
-    const bookingData = {
-      name,
-      fb_name: fbName,
-      email,
-      payment,
-      slots,
-      total,
-    };
+    formData.append("slots", JSON.stringify(slots));
+    formData.append("total", String(total));
 
     try {
-      const formData = new FormData(event.currentTarget);
-
-      const name = String(formData.get("name") || "");
-      const fbName = String(formData.get("fb_name") || "");
-      const email = String(formData.get("email") || "");
-      const payment = formData.get("payment");
-
-      formData.append("slots", JSON.stringify(slots));
-      formData.append("total", String(total));
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || ""}/api/home_bookings`,
         {
           method: "POST",
-          // headers: {
-          //   "Content-Type": "application/json",
-          // },
           body: formData,
         },
       );
@@ -93,7 +130,7 @@ export function HomepageForm({ data, onBookingSubmitted }: BookingFormProps) {
 
       const newBookingNumber = result.data?.booking?.booking_number || "";
 
-      setCustomerName(name);
+      setCustomerName(name as string);
       setBookingNumber(newBookingNumber);
       setSubmittedSlots(slots);
       setSubmittedTotal(total);
@@ -103,13 +140,15 @@ export function HomepageForm({ data, onBookingSubmitted }: BookingFormProps) {
 
       onBookingSubmitted();
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+      setBookingError(message);
       console.error("Booking failed:", error);
     }
   }
 
   return (
     <>
-      <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
+      <Dialog open={bookingOpen} onOpenChange={(open) => { setBookingOpen(open); if (!open) setBookingError(null); }}>
         <DialogTrigger
           render={
             <Button
@@ -154,14 +193,56 @@ export function HomepageForm({ data, onBookingSubmitted }: BookingFormProps) {
                 />
               </Field>
 
+               <Field>
+                    <Label htmlFor="fb_name">Facebook Name *</Label>
+                    <Input
+                      id="fb_name"
+                      name="fb_name"
+                      placeholder="So we can reach you on Messenger"
+                      className="h-11 focus-visible:ring-[#d4a24c]"
+                    />
+                </Field>
+
+              {
+                formType === "booking" && (
+                  <Field>
+                    <Label htmlFor="fb_name">Facebook Name *</Label>
+                    <Input
+                      id="fb_name"
+                      name="fb_name"
+                      placeholder="So we can reach you on Messenger"
+                      className="h-11 focus-visible:ring-[#d4a24c]"
+                    />
+                  </Field>
+                )
+              }
+
               <Field>
-                <Label htmlFor="fb_name">Facebook Name *</Label>
-                <Input
-                  id="fb_name"
-                  name="fb_name"
-                  placeholder="So we can reach you on Messenger"
-                  className="h-11 focus-visible:ring-[#d4a24c]"
-                />
+                <Label htmlFor="court_id">Select Court *</Label>
+                <Select name="court_id" required value={selectedCourt} onValueChange={(value) => setSelectedCourt(value ?? "")}>
+                  <SelectTrigger className="h-11 focus-visible:ring-[#d4a24c]">
+                    <SelectValue>
+                      {selectedCourt
+                        ? courts.find((c) => c.court_id.toString() === selectedCourt)?.type ?? selectedCourt
+                        : <span className="text-muted-foreground">Select a court</span>}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courts.map((court) => {
+                      const isBooked = bookedCourtIds.has(court.court_id);
+                      return (
+                        <SelectItem
+                          key={court.court_id}
+                          value={court.court_id.toString()}
+                          disabled={isBooked}
+                          className={isBooked ? "opacity-50 cursor-not-allowed" : ""}
+                        >
+                          {court.type}{isBooked ? " (Booked)" : ""}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field>
@@ -198,7 +279,12 @@ export function HomepageForm({ data, onBookingSubmitted }: BookingFormProps) {
               </Field>
             </FieldGroup>
 
-            <DialogFooter className="mt-4 sm:justify-center">
+            <DialogFooter className="mt-4 sm:justify-center flex-col gap-2">
+              {bookingError && (
+                <p className="w-full text-center text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                  ⚠️ {bookingError}
+                </p>
+              )}
               <Button
                 type="submit"
                 className="w-full h-12 rounded-xl bg-[#d4a24c] font-bold text-primary hover:bg-[#e1b45f]"

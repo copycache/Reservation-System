@@ -148,8 +148,8 @@ export function BookingTable({ tabValue, bookings, loadBookingSlots }: BookingFo
                     <TableCell className="min-w-[180px] px-4">
                       {booking.customers?.name}
                     </TableCell>
-                    <TableCell className="min-w-[120px] px-4 whitespace-nowrap">
-                      Court
+                    <TableCell className="min-w-[120px] px-4 whitespace-nowrap capitalize">
+                      {booking.booking_slots?.[0]?.court?.type ?? "—"}
                     </TableCell>
                     <TableCell className="w-[180px] px-4 text-center whitespace-nowrap">
                       {booking.booking_slots?.map((booking_slot: any) => (

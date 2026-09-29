@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,25 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-const events = [
-  {
-    date: "2026-09-16",
-    title: "Team Meeting",
-  },
-  {
-    date: "2026-09-18",
-    title: "Project Deadline",
-  },
-  {
-    date: "2026-09-22",
-    title: "Design Review",
-  },
-  {
-    date: "2026-09-25",
-    title: "Client Call",
-  },
-];
+import { formatTime } from "@/lib/format_time";
 
 const weekDays = [
   "Sunday",
@@ -42,8 +24,55 @@ const weekDays = [
   "Saturday",
 ];
 
+type CalendarEvent = {
+  id: string;
+  date: string;
+  title: string;
+  time: string;
+  court: string;
+  courtType: string;
+  status: string;
+};
+
 export function BigCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+
+  useEffect(() => {
+    async function fetchBookings() {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/booking`
+        );
+        if (!response.ok) throw new Error("Failed to fetch bookings");
+        
+        const data = await response.json();
+        
+        const newEvents: CalendarEvent[] = [];
+        data.forEach((booking: any) => {
+          if (booking.status !== "cancelled" && booking.booking_slots) {
+            booking.booking_slots.forEach((slot: any) => {
+              newEvents.push({
+                id: slot.id || Math.random().toString(),
+                date: slot.date, // Format from API should be YYYY-MM-DD
+                title: booking.customers?.name || "Unknown",
+                time: `${formatTime(slot.start_time, true)} - ${formatTime(slot.end_time, true)}`,
+                court: slot.court?.court_name || "Court",
+                courtType: slot.court?.type || "",
+                status: slot.status,
+              });
+            });
+          }
+        });
+        
+        setEvents(newEvents);
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+      }
+    }
+
+    fetchBookings();
+  }, []);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -104,9 +133,9 @@ export function BigCalendar() {
   }
 
   return (
-    <div className="w-full rounded-lg border bg-background">
+    <div className="w-full rounded-lg border bg-background overflow-hidden">
       {/* Calendar header */}
-      <div className="flex items-center justify-between border-b p-4">
+      <div className="flex items-center justify-between border-b p-4 bg-muted/20">
         <div>
           <h2 className="text-xl font-semibold">
             {currentDate.toLocaleString("default", {
@@ -136,8 +165,9 @@ export function BigCalendar() {
         <TableHeader>
           <TableRow>
             {weekDays.map((day) => (
-              <TableHead key={day} className="h-10 text-center font-medium">
-                {day.slice(0, 3)}
+              <TableHead key={day} className="h-10 text-center font-medium border-x first:border-l-0 last:border-r-0">
+                <span className="hidden md:inline">{day}</span>
+                <span className="md:hidden">{day.slice(0, 3)}</span>
               </TableHead>
             ))}
           </TableRow>
@@ -145,42 +175,54 @@ export function BigCalendar() {
 
         <TableBody>
           {weeks.map((week, weekIndex) => (
-            <TableRow key={weekIndex}>
+            <TableRow key={weekIndex} className="hover:bg-transparent">
               {week.map((day, dayIndex) => {
                 const dayEvents = day ? getEvents(day) : [];
 
                 return (
                   <TableCell
                     key={dayIndex}
-                    className="h-32 w-[14.28%] align-top p-2"
+                    className={`h-36 md:h-40 w-[14.28%] align-top p-2 border-x first:border-l-0 last:border-r-0 ${
+                      !day ? "bg-muted/10" : ""
+                    } ${isToday(day || -1) ? "bg-primary/5" : ""}`}
                   >
                     {day && (
                       <div className="flex h-full flex-col">
                         {/* Date */}
-                        <div className="mb-2">
+                        <div className="mb-2 flex justify-between items-start">
                           <span
                             className={`
                               flex h-7 w-7 items-center justify-center rounded-full
                               text-sm
                               ${
                                 isToday(day)
-                                  ? "bg-primary text-primary-foreground font-semibold"
-                                  : ""
+                                  ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                                  : "text-muted-foreground font-medium"
                               }
                             `}
                           >
                             {day}
                           </span>
+                          {dayEvents.length > 0 && (
+                            <span className="text-[10px] text-muted-foreground font-medium hidden md:inline-block">
+                              {dayEvents.length} {dayEvents.length === 1 ? "booking" : "bookings"}
+                            </span>
+                          )}
                         </div>
 
                         {/* Events */}
-                        <div className="space-y-1">
+                        <div className="flex-1 space-y-1 overflow-y-auto pr-1 -mr-1 scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40">
                           {dayEvents.map((event, index) => (
                             <div
                               key={index}
-                              className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                              className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20 flex flex-col leading-tight"
                             >
-                              {event.title}
+                              <div className="truncate" title={`${event.title} - ${event.court}${event.courtType ? ` (${event.courtType})` : ""}`}>
+                                {event.title} {event.courtType ? `- ${event.courtType}` : ""}
+                              </div>
+                              <div className="text-[10px] opacity-80 truncate" title={event.time}>
+                                {event.time}
+                              </div>
                             </div>
                           ))}
                         </div>

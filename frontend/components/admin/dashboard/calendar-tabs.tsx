@@ -11,7 +11,8 @@ import {
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { CalendarForm } from "@/components/admin/dashboard/calendar-form";
+
+import { HomepageForm } from "@/components/homepage-form";
 import { formatTime } from "@/lib/format_time";
 
 type BookingSlot = {
@@ -20,7 +21,7 @@ type BookingSlot = {
   end_time: string;
   price: number | string;
   status: string;
-  booking?: {
+  bookings?: {
     status?: string;
     customers?: {
       name?: string;
@@ -66,6 +67,11 @@ export function DayCalendar({ date }: DayCalendarProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
 
+  const [openSlotForBooking, setOpenSlotForBooking] = useState<Map<string, any>>(new Map());
+  const [isHomepageFormOpen, setIsHomepageFormOpen] = useState(false);
+  const [formType, setFormType] = useState<"booking" | "edit">("booking");
+  const [editData, setEditData] = useState<BookingSlot | null>(null);
+
   const dateKey = [
     date.getFullYear(),
     String(date.getMonth() + 1).padStart(2, "0"),
@@ -106,9 +112,16 @@ export function DayCalendar({ date }: DayCalendarProps) {
     );
   };
 
-  const getStatus = (slot?: BookingSlot) => {
-    if (!slot || slot.booking?.status === "cancelled") {
-      return "Open";
+  const isPastSlot = (startTime: string) => {
+    const slotDate = new Date(date);
+    const [hours, minutes, seconds] = startTime.split(':').map(Number);
+    slotDate.setHours(hours, minutes || 0, seconds || 0, 0);
+    return new Date() >= slotDate;
+  };
+
+  const getStatus = (slot?: BookingSlot, isPast?: boolean) => {
+    if (!slot || slot.bookings?.status === "cancelled") {
+      return isPast ? "--" : "Open";
     }
 
     switch (slot.status) {
@@ -125,7 +138,7 @@ export function DayCalendar({ date }: DayCalendarProps) {
       case "--":
         return "--";
       default:
-        return "Open";
+        return isPast ? "--" : "Open";
     }
   };
 
@@ -173,10 +186,11 @@ export function DayCalendar({ date }: DayCalendarProps) {
             timeSlot.end_time,
           );
 
-          const status = getStatus(slot);
+          const isPast = isPastSlot(timeSlot.start_time);
+          const status = getStatus(slot, isPast);
           const selected = isSelected(slot);
 
-          const customerName = slot?.booking?.customers?.name;
+          const customerName = slot?.bookings?.customers?.name;
 
           const label = `${formatTime(timeSlot.start_time)}-${formatTime(
             timeSlot.end_time,
@@ -208,16 +222,49 @@ export function DayCalendar({ date }: DayCalendarProps) {
                   nativeButton={false}
                   render={
                     <TableCell
-                      className={`${statusStyles[status]} cursor-pointer hover:opacity-80`}
+                      className={`${statusStyles[status]} ${status === "--" && isPast ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:opacity-80"}`}
                       onClick={() => {
+                        if (status === "--" && isPast) return;
+                        
                         if (slot) {
-                          setSelectedSlot(slot);
+                          setSelectedSlot(null);
+                          const newMap = new Map();
+                          const priceStr = String(timeSlot.price).replace("₱", "").replace(",", "");
+                          const subtotal = parseInt(priceStr) || 0;
+
+                          newMap.set(`${dateKey}::${timeSlot.start_time}-${timeSlot.end_time}`, {
+                            date: dateKey,
+                            start_time: timeSlot.start_time,
+                            end_time: timeSlot.end_time,
+                            subtotal: subtotal
+                          });
+                          
+                          setOpenSlotForBooking(newMap);
+                          setFormType("edit");
+                          setEditData(slot);
+                          setIsHomepageFormOpen(true);
                         } else {
                           setSelectedSlot(null);
+                          
+                          const newMap = new Map();
+                          const priceStr = String(timeSlot.price).replace("₱", "").replace(",", "");
+                          const subtotal = parseInt(priceStr) || 0;
+
+                          newMap.set(`${dateKey}::${timeSlot.start_time}-${timeSlot.end_time}`, {
+                            date: dateKey,
+                            start_time: timeSlot.start_time,
+                            end_time: timeSlot.end_time,
+                            subtotal: subtotal
+                          });
+                          
+                          setOpenSlotForBooking(newMap);
+                          setFormType("booking");
+                          setEditData(null);
+                          setIsHomepageFormOpen(true);
                         }
                       }}
                     >
-                      {status}
+                      {status === "--" && isPast ? "Closed" : status}
 
                       {status !== "Open" &&
                         status !== "--" &&
@@ -230,16 +277,25 @@ export function DayCalendar({ date }: DayCalendarProps) {
                     </TableCell>
                   }
                 />
-
-                <CalendarForm
-                  selectedSlot={selected ? slot ?? null : null}
-                  onClose={() => setSelectedSlot(null)}
-                />
               </Dialog>
             </TableRow>
           );
         })}
       </TableBody>
+        <HomepageForm
+          data={openSlotForBooking}
+          bookingSlots={bookingSlots as any}
+          onBookingSubmitted={() => {
+            setIsHomepageFormOpen(false);
+            setOpenSlotForBooking(new Map());
+            loadBookingSlots();
+          }}
+          formType={formType}
+          editData={editData}
+          open={isHomepageFormOpen}
+          onOpenChange={setIsHomepageFormOpen}
+          hideTrigger={true}
+        />
     </Table>
   );
 }

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 
 import { PricingForm } from "@/components/admin/pricing/pricing-form";
 import { formatTime } from "@/lib/format_time";
+import { PricingKPIs } from "@/components/admin/pricing/pricing-kpis";
 
 export default function PricingPage() {
   const [tabValue, setTabValue] = useState("all");
@@ -31,6 +32,24 @@ export default function PricingPage() {
   // ── 3.5 Create dialog open state ─────────────────────────────────────────
   const [createOpen, setCreateOpen] = useState(false);
 
+  const [pricings, setPricings] = useState<any[]>([]);
+
+  const loadPricings = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/pricings", {
+        headers: { Accept: "application/json" },
+      });
+      const result = await response.json();
+      setPricings(result);
+    } catch {
+      // silently fail — keep the list empty
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPricings();
+  }, [loadPricings, refreshKey]);
+
   function handleCreateSuccess() {
     setCreateOpen(false);
     triggerRefresh();
@@ -38,10 +57,8 @@ export default function PricingPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-4">
-      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-        <div className="aspect-video rounded-xl bg-muted/50" />
-        <div className="aspect-video rounded-xl bg-muted/50" />
-        <div className="aspect-video rounded-xl bg-muted/50" />
+      <PricingKPIs pricings={pricings} />
+      <div className="grid auto-rows-min gap-4 md:grid-cols-1">
 
         <div className="col-span-full">
           <Tabs defaultValue="all" value={tabValue} onValueChange={setTabValue}>
@@ -66,7 +83,7 @@ export default function PricingPage() {
               </Dialog>
             </div>
 
-            <PricingTable tabValue={tabValue} refreshKey={refreshKey} onRefresh={triggerRefresh} />
+            <PricingTable pricings={pricings} tabValue={tabValue} refreshKey={refreshKey} onRefresh={triggerRefresh} />
           </Tabs>
         </div>
       </div>
@@ -77,36 +94,18 @@ export default function PricingPage() {
 type pricings = any;
 
 export function PricingTable({
+  pricings,
   tabValue,
   refreshKey,
   onRefresh,
 }: {
+  pricings: any[];
   tabValue: string;
   refreshKey: number;
   onRefresh: () => void;
 }) {
-  const [pricings, setPricings] = useState<pricings[]>([]);
-
   // ── Per-row dialog open state keyed by pricing_rule_id ───────────────────
   const [openDialogId, setOpenDialogId] = useState<number | null>(null);
-
-  const loadPricings = useCallback(async () => {
-    try {
-      // Relative URL — Next.js rewrites /api/* → Laravel.
-      // The middleware injects the auth_token cookie as a Bearer header automatically.
-      const response = await fetch("/api/admin/pricings", {
-        headers: { Accept: "application/json" },
-      });
-      const result = await response.json();
-      setPricings(result);
-    } catch {
-      // silently fail — keep the list empty
-    }
-  }, []);
-
-  useEffect(() => {
-    loadPricings();
-  }, [loadPricings, refreshKey]);
 
   function handleEditSuccess() {
     setOpenDialogId(null);
@@ -150,7 +149,7 @@ export function PricingTable({
               {pricings
                 .filter(
                   (pricing) =>
-                    tabValue === "all" || pricing.is_active === tabValue,
+                    tabValue === "all" || pricing.status === tabValue,
                 )
                 .map((pricing) => {
                   // Derive display values from the API shape
@@ -166,7 +165,12 @@ export function PricingTable({
                     ? `${formatTime(firstSchedule.start_time)} – ${formatTime(firstSchedule.end_time)}`
                     : "—";
 
-                  const statusLabel = pricing.is_active ? "Active" : "Closed";
+                  const statusLabel =
+                    pricing.status === "active"
+                      ? "Active"
+                      : pricing.status === "maintenance"
+                      ? "Maintenance"
+                      : "Unavailable";
 
                   return (
                     <TableRow
@@ -190,7 +194,17 @@ export function PricingTable({
                       </TableCell>
 
                       <TableCell className="px-4 text-center">
-                        {statusLabel}
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            pricing.status === "active"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                              : pricing.status === "maintenance"
+                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                              : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                          }`}
+                        >
+                          {statusLabel}
+                        </span>
                       </TableCell>
 
                       <TableCell className="px-4 text-right">

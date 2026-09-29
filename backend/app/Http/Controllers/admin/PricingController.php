@@ -30,7 +30,7 @@ class PricingController extends Controller
     public function publicIndex(): JsonResponse
     {
         $pricingRules = PricingRule::with('pricingRuleSchedules')
-            ->where('is_active', true)
+            ->where('status', 'active')
             ->orderBy('priority')
             ->get();
 
@@ -61,7 +61,7 @@ class PricingController extends Controller
             'end_time'      => ['required', 'date_format:H:i', 'after:start_time'],
             'price_per_hour'=> ['required', 'numeric', 'min:0'],
             'priority'      => ['required', 'integer', 'min:0'],
-            'status'        => ['required', 'string', 'in:active,close'],
+            'status'        => ['required', 'string', 'in:active,maintenance,unavailable'],
         ]);
 
         $courtId = $this->resolveCourtId($validated['court']);
@@ -73,7 +73,7 @@ class PricingController extends Controller
                 'type'      => 'standard',
                 'price'     => $validated['price_per_hour'],
                 'priority'  => $validated['priority'],
-                'is_active' => $validated['status'] === 'active',
+                'status'    => $validated['status'],
             ]);
 
             $this->syncSchedules($pricingRule, $validated['days'], $validated['start_time'], $validated['end_time']);
@@ -110,7 +110,7 @@ class PricingController extends Controller
             'end_time'      => ['required', 'date_format:H:i', 'after:start_time'],
             'price_per_hour'=> ['required', 'numeric', 'min:0'],
             'priority'      => ['required', 'integer', 'min:0'],
-            'status'        => ['required', 'string', 'in:active,close'],
+            'status'        => ['required', 'string', 'in:active,maintenance,unavailable'],
         ]);
 
         $courtId = $this->resolveCourtId($validated['court']);
@@ -121,7 +121,7 @@ class PricingController extends Controller
                 'name'      => $validated['pricing_name'],
                 'price'     => $validated['price_per_hour'],
                 'priority'  => $validated['priority'],
-                'is_active' => $validated['status'] === 'active',
+                'status'    => $validated['status'],
             ]);
 
             // Delete old schedules and re-insert the new set.

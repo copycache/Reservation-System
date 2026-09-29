@@ -39,6 +39,28 @@ class HomeController extends Controller
             // Database Table
         ]);
 
+        $court_id = $request->input('court_id', 1);
+        $slots = json_decode($request->input('slots'), true);
+
+        // ── Conflict check: reject if any slot is already taken for this court ──
+        foreach ($slots as $slot) {
+            $conflict = BookingSlot::where('court_id', $court_id)
+                ->where('date', $slot['date'])
+                ->where('start_time', $slot['start_time'])
+                ->where('end_time', $slot['end_time'])
+                ->whereNotIn('status', ['open'])
+                ->whereHas('bookings', function ($q) {
+                    $q->where('status', '!=', 'cancelled');
+                })
+                ->exists();
+
+            if ($conflict) {
+                return response()->json([
+                    'message' => 'One or more of your selected slots are already booked for this court. Please choose a different court or time slot.',
+                ], 409);
+            }
+        }
+
         $customer_payload = [
             'name' => $request->input('name'),
             'facebook_name' => $request->input('fb_name'),
@@ -61,13 +83,11 @@ class HomeController extends Controller
         ];
 
         $bookings = Booking::create($bookings_payload);
-        
-        $slots = json_decode($request->input('slots'), true);
 
         foreach ($slots as $slot) {
             BookingSlot::create([
                 'booking_id' => $bookings->booking_id,
-                'court_id' => 1,
+                'court_id' => $court_id,
                 'date' => $slot['date'],
                 'start_time' => $slot['start_time'],
                 'end_time' => $slot['end_time'],

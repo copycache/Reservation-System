@@ -25,7 +25,8 @@ type BookingSlot = {
   end_time: string;
   price: number | string;
   status: string;
-  booking?: {
+  court_id?: number | null;
+  bookings?: {
     status?: string;
   } | null;
 };
@@ -176,6 +177,61 @@ function getPriceForSlot(
   return Number(applicable[0].price);
 }
 
+const WEEKEND_DAYS = new Set(["sat", "sun"]);
+
+/**
+ * Returns the weekend-discount info for a given slot start time, or null
+ * if no weekend-only pricing rule covers this time slot.
+ *
+ * A "weekend rule" is one whose schedules reference ONLY Sat and/or Sun
+ * (i.e. no weekday schedules at all).
+ *
+ * The returned `label` is a sorted, human-readable day range such as "Sat-Sun".
+ */
+function getWeekendDiscountForSlot(
+  pricingRules: PricingRule[],
+  startTime: string,
+): { label: string; price: number } | null {
+  const slotMins = timeToMinutes(startTime);
+
+  // Identify rules whose schedules are exclusively weekend days
+  const weekendRules = pricingRules.filter((rule) => {
+    const days = new Set(rule.pricing_rule_schedules.map((s) => s.day_of_week));
+    // Must have at least one schedule and ALL of them must be Sat or Sun
+    return days.size > 0 && [...days].every((d) => WEEKEND_DAYS.has(d));
+  });
+
+  // Among weekend rules, find the one (highest priority) whose time range
+  // covers the given slot start time
+  weekendRules.sort((a, b) => a.priority - b.priority);
+
+  for (const rule of weekendRules) {
+    const covers = rule.pricing_rule_schedules.some((s) => {
+      const start = timeToMinutes(s.start_time);
+      const end =
+        timeToMinutes(s.end_time) === 0 ? 24 * 60 : timeToMinutes(s.end_time);
+      return slotMins >= start && slotMins < end;
+    });
+
+    if (!covers) continue;
+
+    // Build a human-readable label from the unique days in this rule
+    const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+    const DAY_LABEL: Record<string, string> = {
+      mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu",
+      fri: "Fri", sat: "Sat", sun: "Sun",
+    };
+    const uniqueDays = [
+      ...new Set(rule.pricing_rule_schedules.map((s) => s.day_of_week)),
+    ].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
+
+    const label = uniqueDays.map((d) => DAY_LABEL[d] ?? d).join("-");
+    return { label, price: Number(rule.price) };
+  }
+
+  return null;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ScheduleTable({
@@ -310,7 +366,7 @@ export default function ScheduleTable({
       );
     });
 
-    if (!slot || slot.booking?.status === "cancelled") {
+    if (!slot || slot.bookings?.status === "cancelled") {
       return "Open";
     }
 
@@ -473,9 +529,21 @@ export default function ScheduleTable({
                     key={slotLabel}
                     className="*:border-border [&>:not(:last-child)]:border-r"
                   >
-                    {/* Time slot label column — price omitted since it varies per day */}
+                    {/* Time slot label column — shows weekend discount subtext when applicable */}
                     <TableCell className="text-xs font-medium py-1.5">
-                      {slotLabel}
+                      <span>{slotLabel}</span>
+                      {(() => {
+                        const discount = getWeekendDiscountForSlot(
+                          pricingRules,
+                          slot.start_time,
+                        );
+                        if (!discount) return null;
+                        return (
+                          <span className="block text-[10px] font-normal text-muted-foreground mt-0.5 leading-tight">
+                            {discount.label} ₱{discount.price.toFixed(0)}
+                          </span>
+                        );
+                      })()}
                     </TableCell>
 
                     {visibleDays.map((day) => {
@@ -523,10 +591,10 @@ export default function ScheduleTable({
                           {past
                             ? ""
                             : selected
-                            ? "✓ Selected"
-                            : value === "Open"
-                            ? `Open · ₱${price}`
-                            : value}
+                              ? "✓ Selected"
+                              : value === "Open"
+                                ? `Open · ₱${price}`
+                                : value}
                         </TableCell>
                       );
                     })}
@@ -562,10 +630,12 @@ export default function ScheduleTable({
 
             <HomepageForm
               data={selectedSlots}
+              bookingSlots={bookingSlots}
               onBookingSubmitted={() => {
                 setSelectedSlots(new Map());
                 onBookingSubmitted();
               }}
+              formType={"homepage"}
             />
           </div>
         </div>

@@ -44,7 +44,7 @@ type Pricing = {
   type: string;
   price: string;
   priority: number;
-  is_active: boolean | number;
+  status: "active" | "maintenance" | "unavailable";
   pricing_rule_schedules: PricingRuleSchedule[];
 };
 
@@ -74,13 +74,6 @@ const ALL_DAYS = [
 function courtIdToSlug(courtId: number | null): string {
   if (courtId === null) return "all";
   return `court_${courtId}`;
-}
-
-/**
- * Convert is_active (boolean or 0/1 from the API) to the form's status slug.
- */
-function isActiveToStatus(isActive: boolean | number): string {
-  return isActive ? "active" : "close";
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -360,12 +353,9 @@ export function PricingForm({ formType, pricingId, onSuccess }: PricingFormProps
               <Field>
                 <FieldLabel htmlFor="status">Status</FieldLabel>
 
-                {/* ── 3.4 Convert is_active boolean back to status slug ── */}
                 <Select
                   name="status"
-                  defaultValue={
-                    pricing ? isActiveToStatus(pricing.is_active) : "active"
-                  }
+                  defaultValue={pricing ? pricing.status : "active"}
                   required
                 >
                   <SelectTrigger id="status">
@@ -374,7 +364,8 @@ export function PricingForm({ formType, pricingId, onSuccess }: PricingFormProps
 
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="close">Close</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                    <SelectItem value="unavailable">Unavailable</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>

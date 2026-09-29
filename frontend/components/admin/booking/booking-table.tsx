@@ -61,6 +61,8 @@ type Booking = any;
 
 type BookingFormProps = {
   tabValue: string;
+  bookings: Booking[];
+  loadBookingSlots: () => void;
 };
 
 export function PaymentLegend(status: string) {
@@ -90,23 +92,7 @@ export function StatusLegend({ status }: { status: string }) {
     );
 }
 
-export function BookingTable({ tabValue }: BookingFormProps) {
-  const [bookings, setBookingSlots] = useState<Booking[]>([]);
-  const loadBookingSlots = useCallback(async () => {
-    try {
-      const response = await fetch("/api/admin/booking", {
-        headers: { Accept: "application/json" },
-      });
-      const slots = await response.json();
-      setBookingSlots(slots);
-    } catch {
-    } finally {
-    }
-  }, []);
-
-  useEffect(() => {
-    loadBookingSlots();
-  }, [loadBookingSlots]);
+export function BookingTable({ tabValue, bookings, loadBookingSlots }: BookingFormProps) {
   return (
     <TabsContent value={tabValue}>
       <div className="w-full">

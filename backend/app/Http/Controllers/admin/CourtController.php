@@ -9,6 +9,15 @@ use Illuminate\Http\Request;
 class CourtController extends Controller
 {
     /**
+     * Display a listing of active courts for public use.
+     */
+    public function publicIndex()
+    {
+        $courts = Court::where('status', 'active')->get();
+        return response()->json($courts);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()

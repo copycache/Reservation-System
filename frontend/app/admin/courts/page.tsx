@@ -19,18 +19,35 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { CourtForm } from "@/components/admin/court/court-form";
+import { CourtKPIs } from "@/components/admin/court/court-kpis";
 
 export default function CourtPage() {
   const [tabValue, setTabValue] = useState("all");
+  const [courts, setCourts] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+
+  const loadData = useCallback(async () => {
+    try {
+      const courtsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/courts`);
+      const courtsData = await courtsRes.json();
+      setCourts(courtsData);
+
+      const bookingsRes = await fetch("/api/admin/booking", { headers: { Accept: "application/json" } });
+      const bookingsData = await bookingsRes.json();
+      setBookings(bookingsData);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-4">
-      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-        <div className="aspect-video rounded-xl bg-muted/50" />
-        <div className="aspect-video rounded-xl bg-muted/50" />
-        <div className="aspect-video rounded-xl bg-muted/50" />
-
-        <div className="col-span-full">
-          <Tabs defaultValue="all" value={tabValue} onValueChange={setTabValue}>
+      <CourtKPIs courts={courts} bookings={bookings} />
+      
+      <div className="w-full">
+        <Tabs defaultValue="all" value={tabValue} onValueChange={setTabValue}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <TabsList variant="default">
                 <TabsTrigger value="all">All</TabsTrigger>
@@ -48,9 +65,8 @@ export default function CourtPage() {
               </Dialog>
             </div>
 
-            <CourtTable tabValue={tabValue} />
+            <CourtTable tabValue={tabValue} courts={courts} />
           </Tabs>
-        </div>
       </div>
     </div>
   );
@@ -58,23 +74,7 @@ export default function CourtPage() {
 
 type Courts = any;
 
-export function CourtTable({ tabValue }: { tabValue: string }) {
-  const [courts, setCourts] = useState<Courts[]>([]);
-  const loadCourts = useCallback(async () => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/courts`,
-      );
-      const result = await response.json();
-      setCourts(result);
-    } catch {
-    } finally {
-    }
-  }, []);
-
-  useEffect(() => {
-    loadCourts();
-  }, [loadCourts]);
+export function CourtTable({ tabValue, courts }: { tabValue: string, courts: Courts[] }) {
   return (
     <TabsContent value={tabValue} className="mt-4">
       <div className="w-full">

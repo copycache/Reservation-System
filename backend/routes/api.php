@@ -28,6 +28,7 @@ Route::post('/home_bookings', [HomeController::class, 'store']);
 
 // Public pricing rules — used by the homepage to generate dynamic time slots (no auth required).
 Route::get('/public/pricings', [PricingController::class, 'publicIndex']);
+Route::get('/public/courts', [CourtController::class, 'publicIndex']);
 
 Route::group(['middleware' => ['auth:sanctum', 'role:admin']], function () {
     // admin

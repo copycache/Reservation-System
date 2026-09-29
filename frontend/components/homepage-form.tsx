@@ -39,24 +39,28 @@ type BookingFormProps = {
   bookingSlots?: ExistingSlot[];
   onBookingSubmitted: () => void;
   formType?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+  editData?: any;
 };
 
-export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, formType }: BookingFormProps) {
-  console.log(formType);
+export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, formType, open: controlledOpen, onOpenChange: setControlledOpen, hideTrigger, editData }: BookingFormProps) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [courts, setCourts] = useState<any[]>([]);
   const [selectedCourt, setSelectedCourt] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
 
   useEffect(() => {
     async function loadCourts() {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/public/courts`);
         if (res.ok) {
-          const data = await res.json();
-          setCourts(data);
-          if (data.length === 1) {
-            setSelectedCourt(data[0].court_id.toString());
+          const courtsData = await res.json();
+          setCourts(courtsData);
+          if (courtsData.length === 1) {
+            setSelectedCourt(courtsData[0].court_id.toString());
           }
         }
       } catch (err) {
@@ -66,6 +70,15 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
     loadCourts();
   }, []);
 
+  useEffect(() => {
+    if (formType === "edit" && editData) {
+      if (editData.court_id) setSelectedCourt(editData.court_id.toString());
+      if (editData.status) setSelectedStatus(editData.status);
+    } else {
+      setSelectedStatus("");
+    }
+  }, [formType, editData]);
+
   // Compute which court IDs are unavailable for the selected slots.
   // A court is "booked" if any existing non-cancelled slot overlaps
   // with any of the user's selected date + time combinations.
@@ -74,7 +87,10 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
     bookingSlots
       .filter((existing) => {
         if (!existing.court_id) return false;
-        // 'bookings' is the JSON key Laravel uses (matches the method name on BookingSlot model)
+        // Skip current edit data so we don't disable the currently assigned court
+        if (formType === "edit" && editData && existing.date === editData.date && existing.start_time === editData.start_time && existing.court_id === editData.court_id) {
+          return false;
+        }
         if (existing.bookings?.status === "cancelled") return false;
         if (!existing.status || existing.status === "open") return false;
         return selectedSlotList.some(
@@ -108,19 +124,64 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
     const name = String(formData.get("name") || "");
     const fbName = String(formData.get("fb_name") || "");
     const email = String(formData.get("email") || "");
-    const payment = formData.get("payment");
+    
+    if (formType === "edit" && editData) {
+      formData.append("status", selectedStatus);
+      formData.append("court_id", selectedCourt);
+      
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/dashboard_bookings/${editData.booking_slot_id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name,
+              fb_name: fbName,
+              email,
+              status: selectedStatus,
+              court_id: selectedCourt,
+            }),
+          },
+        );
 
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result?.message || "Failed to update booking");
+        }
+        
+        onBookingSubmitted();
+        if (setControlledOpen) setControlledOpen(false);
+        setBookingOpen(false);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+        setBookingError(message);
+        console.error("Booking edit failed:", error);
+      }
+      return;
+    }
+
+    // Normal POST booking handling below...
+    const payment = formData.get("payment");
     formData.append("slots", JSON.stringify(slots));
     formData.append("total", String(total));
+    
+    if (formType !== "homepage") {
+      formData.append("status", selectedStatus);
+    }
+
+    const apiUrl = formType === "homepage"
+      ? `${process.env.NEXT_PUBLIC_API_URL || ""}/api/home_bookings`
+      : `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/dashboard_bookings`;
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || ""}/api/home_bookings`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        body: formData,
+      });
 
       const result = await response.json();
 
@@ -148,18 +209,27 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
 
   return (
     <>
-      <Dialog open={bookingOpen} onOpenChange={(open) => { setBookingOpen(open); if (!open) setBookingError(null); }}>
-        <DialogTrigger
-          render={
-            <Button
-              size="lg"
-              disabled={data.size === 0}
-              className="px-8 py-6 cursor-pointer bg-[#d4a24c] text-white font-bold hover:bg-[#e1b45f]"
-            >
-              Book my slot →
-            </Button>
-          }
-        />
+      <Dialog 
+        open={controlledOpen !== undefined ? controlledOpen : bookingOpen} 
+        onOpenChange={(open) => { 
+          setBookingOpen(open); 
+          if (setControlledOpen) setControlledOpen(open);
+          if (!open) setBookingError(null); 
+        }}
+      >
+        {!hideTrigger && (
+          <DialogTrigger
+            render={
+              <Button
+                size="lg"
+                disabled={data.size === 0}
+                className="px-8 py-6 cursor-pointer bg-[#d4a24c] text-white font-bold hover:bg-[#e1b45f]"
+              >
+                Book my slot →
+              </Button>
+            }
+          />
+        )}
 
         <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-md">
           <form onSubmit={handleSubmit}>
@@ -189,33 +259,42 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                 <Input
                   id="name"
                   name="name"
+                  defaultValue={formType === "edit" ? editData?.bookings?.customers?.name || "" : ""}
                   className="h-11 focus-visible:ring-[#d4a24c]"
+                  required
                 />
               </Field>
 
                <Field>
-                    <Label htmlFor="fb_name">Facebook Name *</Label>
-                    <Input
-                      id="fb_name"
-                      name="fb_name"
-                      placeholder="So we can reach you on Messenger"
-                      className="h-11 focus-visible:ring-[#d4a24c]"
-                    />
-                </Field>
+                 <Label htmlFor="fb_name">Facebook Name *</Label>
+                 <Input
+                   id="fb_name"
+                   name="fb_name"
+                   defaultValue={formType === "edit" ? editData?.bookings?.customers?.facebook_name || "" : ""}
+                   placeholder="So we can reach you on Messenger"
+                   className="h-11 focus-visible:ring-[#d4a24c]"
+                   required
+                 />
+               </Field>
 
-              {
-                formType === "booking" && (
-                  <Field>
-                    <Label htmlFor="fb_name">Facebook Name *</Label>
-                    <Input
-                      id="fb_name"
-                      name="fb_name"
-                      placeholder="So we can reach you on Messenger"
-                      className="h-11 focus-visible:ring-[#d4a24c]"
-                    />
-                  </Field>
-                )
-              }
+              {formType !== "homepage" && (
+                <Field>
+                  <Label htmlFor="status">Booking Status *</Label>
+                  <Select name="status" required value={selectedStatus} onValueChange={(value) => setSelectedStatus(value ?? "")}>
+                    <SelectTrigger className="h-11 focus-visible:ring-[#d4a24c]">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open_play">Open Play</SelectItem>
+                      <SelectItem value="club">Club</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="booked">Booked</SelectItem>
+                      <SelectItem value="closed">Closed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
 
               <Field>
                 <Label htmlFor="court_id">Select Court *</Label>
@@ -251,32 +330,41 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                   id="email"
                   name="email"
                   type="email"
+                  defaultValue={formType === "edit" ? editData?.bookings?.customers?.email || "" : ""}
                   placeholder="Your receipt goes here"
                   className="h-11 focus-visible:ring-[#d4a24c]"
+                  required
                 />
               </Field>
 
-              <Card className="bg-[#c9a55a]/10 border-[#c9a55a] border">
-                <CardContent>
-                  <p className="text-xs">💸 Send your payment to</p>
-                  <p className="text-base font-bold">GCash 09293759815</p>
-                  <p>An***o S.</p>
-                  <p>
-                    Then upload the screenshot below to confirm your booking.
-                  </p>
-                </CardContent>
-              </Card>
+              {formType !== "booking" && formType !== "edit" && (
+                <Card className="bg-[#c9a55a]/10 border-[#c9a55a] border">
+                  <CardContent>
+                    <p className="text-xs">💸 Send your payment to</p>
+                    <p className="text-base font-bold">GCash 09293759815</p>
+                    <p>An***o S.</p>
+                    <p>
+                      Then upload the screenshot below to confirm your booking.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
-              <Field>
-                <Label htmlFor="payment">Payment Screenshot *</Label>
-                <Input
-                  id="payment"
-                  name="payment"
-                  type="file"
-                  accept="image/*"
-                  className="h-11 focus-visible:ring-[#d4a24c]"
-                />
-              </Field>
+              {formType !== "edit" && (
+                <Field>
+                  <Label htmlFor="payment">
+                    Payment Screenshot {formType === "booking" ? "(Optional)" : "*"}
+                  </Label>
+                  <Input
+                    id="payment"
+                    name="payment"
+                    type="file"
+                    accept="image/*"
+                    className="h-11 focus-visible:ring-[#d4a24c]"
+                    required={formType !== "booking"}
+                  />
+                </Field>
+              )}
             </FieldGroup>
 
             <DialogFooter className="mt-4 sm:justify-center flex-col gap-2">
@@ -289,7 +377,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                 type="submit"
                 className="w-full h-12 rounded-xl bg-[#d4a24c] font-bold text-primary hover:bg-[#e1b45f]"
               >
-                Submit booking
+                {formType === "edit" ? "Save Edit" : "Submit booking"}
               </Button>
             </DialogFooter>
           </form>

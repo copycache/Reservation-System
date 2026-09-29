@@ -33,7 +33,9 @@ Route::get('/public/courts', [CourtController::class, 'publicIndex']);
 Route::group(['middleware' => ['auth:sanctum', 'role:admin']], function () {
     // admin
     Route::get('admin/dashboard_bookings', [DashboardController::class, 'index']);
+    Route::post('admin/dashboard_bookings', [DashboardController::class, 'store']);
     Route::get('admin/dashboard_bookingsSlot', [DashboardController::class, 'show']);
+    Route::put('admin/dashboard_bookings/{bookingSlot}', [DashboardController::class, 'update']);
 
     // Route::get('admin/bookingSlot', [BookingController::class, 'index']);
     // Route::get('admin/bookingSlot/{bookingSlot}', [BookingController::class, 'show']);

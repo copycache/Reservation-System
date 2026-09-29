@@ -26,4 +26,9 @@ class BookingSlot extends Model
     {
         return $this->belongsTo(Booking::class, 'booking_id', 'booking_id');
     }
+
+    public function court()
+    {
+        return $this->belongsTo(Court::class, 'court_id', 'court_id');
+    }
 }

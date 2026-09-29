@@ -14,7 +14,7 @@ class BookingController extends Controller
     public function index()
     {
         //
-        $bookings = Booking::with(['customers', 'bookingSlots'])->get();
+        $bookings = Booking::with(['customers', 'bookingSlots.court'])->get();
 
         return response()->json($bookings);
     }
@@ -41,7 +41,7 @@ class BookingController extends Controller
     public function show(Booking $booking)
     {
         //
-        $booking->load(['customers', 'bookingSlots']);
+        $booking->load(['customers', 'bookingSlots.court']);
 
         return response()->json($booking);
     }
@@ -60,7 +60,7 @@ class BookingController extends Controller
     public function update(Request $request, Booking $booking)
     {
         $action = $request->input('action');
-        $booking->load(['customers', 'bookingSlots']);
+        $booking->load(['customers', 'bookingSlots.court']);
         
         if ($action === 'approve') {
             $booking->status = 'approved';
@@ -88,7 +88,7 @@ class BookingController extends Controller
 
         $booking->save();
 
-        $booking->load(['customers', 'bookingSlots']);
+        $booking->load(['customers', 'bookingSlots.court']);
         
         return response()->json($booking);
     }

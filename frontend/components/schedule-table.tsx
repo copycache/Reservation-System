@@ -529,19 +529,43 @@ export default function ScheduleTable({
                     key={slotLabel}
                     className="*:border-border [&>:not(:last-child)]:border-r"
                   >
-                    {/* Time slot label column — shows weekend discount subtext when applicable */}
-                    <TableCell className="text-xs font-medium py-1.5">
-                      <span>{slotLabel}</span>
+                    {/* Time slot label column — price + optional weekend discount subtext */}
+                    <TableCell className="text-xs font-medium py-1.5 whitespace-nowrap">
                       {(() => {
+                        // Derive the default (weekday) price for this slot.
+                        // We pick Monday as a reference day since it's always
+                        // covered by the Default Rate (Mon–Fri) rule.
+                        const monday = new Date();
+                        monday.setDate(
+                          monday.getDate() - ((monday.getDay() + 6) % 7),
+                        );
+                        const defaultPrice = getPriceForSlot(
+                          pricingRules,
+                          monday,
+                          slot.start_time,
+                        );
+
                         const discount = getWeekendDiscountForSlot(
                           pricingRules,
                           slot.start_time,
                         );
-                        if (!discount) return null;
+
                         return (
-                          <span className="block text-[10px] font-normal text-muted-foreground mt-0.5 leading-tight">
-                            {discount.label} ₱{discount.price.toFixed(0)}
-                          </span>
+                          <>
+                            <span>
+                              {slotLabel}
+                              {defaultPrice !== null && (
+                                <span className="font-normal text-muted-foreground">
+                                  {" "}·{" "}₱{defaultPrice.toFixed(0)}
+                                </span>
+                              )}
+                            </span>
+                            {discount && (
+                              <span className="block text-[10px] font-normal text-muted-foreground mt-0.5 leading-tight">
+                                {discount.label} ₱{discount.price.toFixed(0)}
+                              </span>
+                            )}
+                          </>
                         );
                       })()}
                     </TableCell>
@@ -593,7 +617,7 @@ export default function ScheduleTable({
                             : selected
                               ? "✓ Selected"
                               : value === "Open"
-                                ? `Open · ₱${price}`
+                                ? "Open"
                                 : value}
                         </TableCell>
                       );

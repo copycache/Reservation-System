@@ -14,14 +14,17 @@ return new class extends Migration
         Schema::create('pricing_rules', function (Blueprint $table) {
             $table->id('pricing_rule_id');
 
-            $table->unsignedBigInteger('court_id');
+            $table->unsignedBigInteger('court_id')->nullable()->change();
             $table->foreign('court_id')->references('court_id')->on('courts')->onDelete('cascade');
 
             $table->string('name');
             $table->string('type');
             $table->decimal('price', 10, 2);
             $table->integer('priority')->default(0);
-            $table->boolean('is_active')->default(true);
+             $table->enum('status', ['active', 'maintenance', 'unavailable'])
+                  ->default('active')
+                  ->nullable(false)
+                  ->change();
 
             $table->timestamps();
         });

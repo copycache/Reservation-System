@@ -72,16 +72,6 @@ const tabs: Tab[] = [
     icon: Wallet,
   },
   {
-    title: "Payments",
-    url: "/admin/payments",
-    icon: Wallet,
-  },
-  {
-    title: "Customers",
-    url: "/admin/customers",
-    icon: Users,
-  },
-  {
     title: "Pricing",
     url: "/admin/pricing",
     icon: Tags,
@@ -98,11 +88,6 @@ const tabs: Tab[] = [
       {
         title: "Booking Report",
         url: "/admin/booking-report",
-        icon: null,
-      },
-      {
-        title: "Customer Report",
-        url: "/admin/customer-report",
         icon: null,
       },
     ],

@@ -168,21 +168,21 @@ export function AppSidebar() {
 
                               return (
                                 <SidebarMenuSubItem key={child.url}>
-                                <SidebarMenuSubButton
-                                  isActive={pathname === child.url}
-                                  render={
-                                    <Link
-                                      href={child.url}
-                                      className="flex items-center gap-2"
-                                    >
-                                      {ChildIcon ? (
-                                        <ChildIcon className="h-4 w-4" />
-                                      ) : null}
-                                      <span>{child.title}</span>
-                                    </Link>
-                                  }
-                                />
-                              </SidebarMenuSubItem>
+                                  <SidebarMenuSubButton
+                                    isActive={pathname === child.url}
+                                    render={
+                                      <Link
+                                        href={child.url}
+                                        className="flex items-center gap-2"
+                                      >
+                                        {ChildIcon ? (
+                                          <ChildIcon className="h-4 w-4" />
+                                        ) : null}
+                                        <span>{child.title}</span>
+                                      </Link>
+                                    }
+                                  />
+                                </SidebarMenuSubItem>
                               );
                             })}
                           </SidebarMenuSub>
@@ -211,7 +211,15 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter />
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton>
+              asd
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

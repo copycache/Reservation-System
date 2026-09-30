@@ -61,6 +61,7 @@ type Booking = any;
 
 type BookingFormProps = {
   tabValue: string;
+  searchQuery?: string;
   bookings: Booking[];
   loadBookingSlots: () => void;
 };
@@ -92,7 +93,7 @@ export function StatusLegend({ status }: { status: string }) {
     );
 }
 
-export function BookingTable({ tabValue, bookings, loadBookingSlots }: BookingFormProps) {
+export function BookingTable({ tabValue, searchQuery, bookings, loadBookingSlots }: BookingFormProps) {
   return (
     <TabsContent value={tabValue}>
       <div className="w-full">
@@ -137,6 +138,15 @@ export function BookingTable({ tabValue, bookings, loadBookingSlots }: BookingFo
                 .filter(
                   (slot) => tabValue === "all" || slot.status === tabValue,
                 )
+                .filter((slot) => {
+                  if (!searchQuery) return true;
+                  const query = searchQuery.toLowerCase();
+                  return (
+                    String(slot.booking_number || "").toLowerCase().includes(query) ||
+                    String(slot.customers?.name || "").toLowerCase().includes(query) ||
+                    String(slot.booking_slots?.[0]?.court?.type || "").toLowerCase().includes(query)
+                  );
+                })
                 .map((booking) => (
                   <TableRow
                     key={`${booking.booking_id}`}

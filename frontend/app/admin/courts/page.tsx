@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { EllipsisVertical } from "lucide-react";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
 import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
 
@@ -23,6 +24,7 @@ import { CourtKPIs } from "@/components/admin/court/court-kpis";
 
 export default function CourtPage() {
   const [tabValue, setTabValue] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [courts, setCourts] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
 
@@ -48,24 +50,35 @@ export default function CourtPage() {
       
       <div className="w-full">
         <Tabs defaultValue="all" value={tabValue} onValueChange={setTabValue}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <TabsList variant="default">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-                <TabsTrigger value="unavailable">Unavailable</TabsTrigger>
-              </TabsList>
+            <div className="flex flex-col gap-4 mb-4">
+              <div className="flex items-center justify-between">
+                <TabsList variant="default">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="active">Active</TabsTrigger>
+                  <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+                  <TabsTrigger value="unavailable">Unavailable</TabsTrigger>
+                </TabsList>
 
-              <Dialog>
-                <DialogTrigger
-                  render={<Button variant="default">Create New Court</Button>}
+                <Dialog>
+                  <DialogTrigger
+                    render={<Button variant="default">Create New Court</Button>}
+                  />
+
+                  <CourtForm formType={"create"} />
+                </Dialog>
+              </div>
+
+              <div className="w-full sm:w-80">
+                <Input
+                  type="text"
+                  placeholder="Search courts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
-
-                <CourtForm formType={"create"} />
-              </Dialog>
+              </div>
             </div>
 
-            <CourtTable tabValue={tabValue} courts={courts} />
+            <CourtTable tabValue={tabValue} courts={courts} searchQuery={searchQuery} />
           </Tabs>
       </div>
     </div>
@@ -74,7 +87,7 @@ export default function CourtPage() {
 
 type Courts = any;
 
-export function CourtTable({ tabValue, courts }: { tabValue: string, courts: Courts[] }) {
+export function CourtTable({ tabValue, courts, searchQuery }: { tabValue: string, courts: Courts[], searchQuery?: string }) {
   return (
     <TabsContent value={tabValue} className="mt-4">
       <div className="w-full">
@@ -107,6 +120,14 @@ export function CourtTable({ tabValue, courts }: { tabValue: string, courts: Cou
             <TableBody>
               {courts
                 .filter((court) => tabValue === "all" || court.status === tabValue)
+                .filter((court) => {
+                  if (!searchQuery) return true;
+                  const query = searchQuery.toLowerCase();
+                  return (
+                    String(court.court_name || "").toLowerCase().includes(query) ||
+                    String(court.type || "").toLowerCase().includes(query)
+                  );
+                })
                 .map((court) => (
                   <TableRow
                     key={court.court_id}

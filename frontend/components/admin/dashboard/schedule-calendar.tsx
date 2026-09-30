@@ -1,16 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { DayCalendar } from "@/components/admin/dashboard/calendar-tabs";
 import { formatDate } from "@/lib/format_date";
 
+type Court = {
+  court_id: number;
+  court_name: string;
+  type: string;
+  capacity: number;
+  status: string;
+};
+
 export function ScheduleCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("");
+
+  useEffect(() => {
+    async function fetchCourts() {
+      try {
+        const res = await fetch("/api/admin/courts");
+        if (res.ok) {
+          const data: Court[] = await res.json();
+          setCourts(data);
+          if (data.length > 0) {
+            setActiveTab(data[0].court_id.toString());
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch courts:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCourts();
+  }, []);
 
   const handleToday = () => setCurrentDate(new Date());
 
@@ -32,7 +64,7 @@ export function ScheduleCalendar() {
 
   return (
     <div className="min-h-[100vh] flex-1 rounded-xl md:min-h-min">
-      <Tabs defaultValue="overview" className="w-full rounded-lg border">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full rounded-lg border">
         <div className="flex items-center justify-between border-b p-4">
           <ButtonGroup>
             <Button variant="outline" onClick={handleToday}>Today</Button>
@@ -53,19 +85,29 @@ export function ScheduleCalendar() {
           </div>
 
           <TabsList>
-            <TabsTrigger value="1">Court 1</TabsTrigger>
-            <TabsTrigger value="2">Court 1</TabsTrigger>
-            <TabsTrigger value="3">Court 1</TabsTrigger>
-            <TabsTrigger value="4">Court 1</TabsTrigger>
+            {loading ? (
+              <div className="flex space-x-2">
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+            ) : courts.length > 0 ? (
+              courts.map((court) => (
+                <TabsTrigger key={court.court_id} value={court.court_id.toString()}>
+                  {court.court_name}
+                </TabsTrigger>
+              ))
+            ) : (
+              <div className="text-sm text-muted-foreground px-4">No courts found</div>
+            )}
           </TabsList>
         </div>
-        <TabsContent value="1">
-          {" "}
-          <DayCalendar date={currentDate} />{" "}
-        </TabsContent>
-        <TabsContent value="2"></TabsContent>
-        <TabsContent value="3"></TabsContent>
-        <TabsContent value="4"></TabsContent>
+        {!loading && courts.map((court) => (
+          <TabsContent key={court.court_id} value={court.court_id.toString()}>
+            {" "}
+            <DayCalendar date={currentDate} courtId={court.court_id} />{" "}
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   );

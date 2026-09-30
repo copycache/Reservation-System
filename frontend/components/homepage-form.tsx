@@ -43,9 +43,10 @@ type BookingFormProps = {
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
   editData?: any;
+  defaultCourtId?: string | number;
 };
 
-export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, formType, open: controlledOpen, onOpenChange: setControlledOpen, hideTrigger, editData }: BookingFormProps) {
+export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, formType, open: controlledOpen, onOpenChange: setControlledOpen, hideTrigger, editData, defaultCourtId }: BookingFormProps) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [courts, setCourts] = useState<any[]>([]);
@@ -76,8 +77,9 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
       if (editData.status) setSelectedStatus(editData.status);
     } else {
       setSelectedStatus("");
+      if (defaultCourtId) setSelectedCourt(defaultCourtId.toString());
     }
-  }, [formType, editData]);
+  }, [formType, editData, defaultCourtId]);
 
   // Compute which court IDs are unavailable for the selected slots.
   // A court is "booked" if any existing non-cancelled slot overlaps

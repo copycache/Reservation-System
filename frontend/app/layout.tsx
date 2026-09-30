@@ -13,21 +13,25 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={cn("h-full", "antialiased", "font-sans", inter.variable)}
-      suppressHydrationWarning
-    >
-      <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
+
+    <>
+      <html
+        lang="en"
+        className={cn("h-full", "antialiased", "font-sans", inter.variable)}
+        suppressHydrationWarning
         >
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
+        <body>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </body>
+      </html>
+    </>
+    
   );
 }

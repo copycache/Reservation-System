@@ -21,6 +21,7 @@ type BookingSlot = {
   end_time: string;
   price: number | string;
   status: string;
+  court_id?: number;
   bookings?: {
     status?: string;
     customers?: {
@@ -60,9 +61,10 @@ const statusStyles: Record<string, string> = {
 
 type DayCalendarProps = {
   date: Date;
+  courtId: number;
 };
 
-export function DayCalendar({ date }: DayCalendarProps) {
+export function DayCalendar({ date, courtId }: DayCalendarProps) {
   const [bookingSlots, setBookingSlots] = useState<BookingSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
@@ -108,7 +110,8 @@ export function DayCalendar({ date }: DayCalendarProps) {
       (slot) =>
         slot.date === dateKey &&
         slot.start_time === startTime &&
-        slot.end_time === endTime,
+        slot.end_time === endTime &&
+        slot.court_id === courtId,
     );
   };
 
@@ -295,6 +298,7 @@ export function DayCalendar({ date }: DayCalendarProps) {
           open={isHomepageFormOpen}
           onOpenChange={setIsHomepageFormOpen}
           hideTrigger={true}
+          defaultCourtId={courtId}
         />
     </Table>
   );

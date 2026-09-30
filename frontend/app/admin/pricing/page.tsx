@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { EllipsisVertical } from "lucide-react";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 
@@ -24,6 +25,7 @@ import { PricingKPIs } from "@/components/admin/pricing/pricing-kpis";
 
 export default function PricingPage() {
   const [tabValue, setTabValue] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // ── 3.5 Shared refresh key: incrementing it causes PricingTable to re-fetch ──
   const [refreshKey, setRefreshKey] = useState(0);
@@ -62,28 +64,39 @@ export default function PricingPage() {
 
         <div className="col-span-full">
           <Tabs defaultValue="all" value={tabValue} onValueChange={setTabValue}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <TabsList variant="default">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-                <TabsTrigger value="unavailable">Unavailable</TabsTrigger>
-              </TabsList>
+            <div className="flex flex-col gap-4 mb-4">
+              <div className="flex items-center justify-between">
+                <TabsList variant="default">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="active">Active</TabsTrigger>
+                  <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+                  <TabsTrigger value="unavailable">Unavailable</TabsTrigger>
+                </TabsList>
 
-              {/* ── 3.5 Controlled dialog so we can close it from onSuccess ── */}
-              <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogTrigger
-                  render={<Button variant="default">Create New Pricing</Button>}
-                />
+                {/* ── 3.5 Controlled dialog so we can close it from onSuccess ── */}
+                <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                  <DialogTrigger
+                    render={<Button variant="default">Create New Pricing</Button>}
+                  />
 
-                <PricingForm
-                  formType="create"
-                  onSuccess={handleCreateSuccess}
+                  <PricingForm
+                    formType="create"
+                    onSuccess={handleCreateSuccess}
+                  />
+                </Dialog>
+              </div>
+
+              <div className="w-full sm:w-80">
+                <Input
+                  type="text"
+                  placeholder="Search pricing..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
-              </Dialog>
+              </div>
             </div>
 
-            <PricingTable pricings={pricings} tabValue={tabValue} refreshKey={refreshKey} onRefresh={triggerRefresh} />
+            <PricingTable pricings={pricings} tabValue={tabValue} refreshKey={refreshKey} onRefresh={triggerRefresh} searchQuery={searchQuery} />
           </Tabs>
         </div>
       </div>
@@ -98,11 +111,13 @@ export function PricingTable({
   tabValue,
   refreshKey,
   onRefresh,
+  searchQuery,
 }: {
   pricings: any[];
   tabValue: string;
   refreshKey: number;
   onRefresh: () => void;
+  searchQuery?: string;
 }) {
   // ── Per-row dialog open state keyed by pricing_rule_id ───────────────────
   const [openDialogId, setOpenDialogId] = useState<number | null>(null);
@@ -151,6 +166,11 @@ export function PricingTable({
                   (pricing) =>
                     tabValue === "all" || pricing.status === tabValue,
                 )
+                .filter((pricing) => {
+                  if (!searchQuery) return true;
+                  const query = searchQuery.toLowerCase();
+                  return String(pricing.name || "").toLowerCase().includes(query);
+                })
                 .map((pricing) => {
                   // Derive display values from the API shape
                   const schedules: { day_of_week: string; start_time: string; end_time: string }[] =

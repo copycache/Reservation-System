@@ -37,9 +37,10 @@ Route::group(['middleware' => ['auth:sanctum', 'role:admin']], function () {
     Route::get('admin/dashboard_bookingsSlot', [DashboardController::class, 'show']);
     Route::put('admin/dashboard_bookings/{bookingSlot}', [DashboardController::class, 'update']);
 
-    // Route::get('admin/bookingSlot', [BookingController::class, 'index']);
-    // Route::get('admin/bookingSlot/{bookingSlot}', [BookingController::class, 'show']);
     // Route::get('admin/bookingSlot/update/{id}', [BookingController::class, 'update']);
+    
+    Route::get('admin/settings', [\App\Http\Controllers\admin\SettingsController::class, 'index']);
+    Route::post('admin/settings', [\App\Http\Controllers\admin\SettingsController::class, 'store']);
 
     Route::apiResource('admin/booking', BookingController::class);
 

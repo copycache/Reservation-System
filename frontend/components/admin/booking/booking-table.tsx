@@ -96,10 +96,10 @@ export function StatusLegend({ status }: { status: string }) {
 export function BookingTable({ tabValue, searchQuery, bookings, loadBookingSlots }: BookingFormProps) {
   return (
     <TabsContent value={tabValue}>
-      <div className="w-full">
-        <div className="overflow-hidden rounded-md border">
+      <div className="mt-4 w-full">
+        <div className="overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="w-[120px] whitespace-nowrap px-4 font-semibold text-foreground">
                   Booking #

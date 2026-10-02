@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { formatTime } from "@/lib/format_time";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getSettings } from "@/app/admin/settings/actions";
 
 type HeaderProps = {
   onRefresh: () => void;
@@ -8,6 +9,15 @@ type HeaderProps = {
 
 export default function Header({ onRefresh }: HeaderProps) {
   const [lastUpdated, setLastUpdated] = useState(() => formatTime(new Date()));
+  const [storeName, setStoreName] = useState("");
+
+  useEffect(() => {
+    getSettings().then((settings) => {
+      if (settings?.storeName) {
+        setStoreName(settings.storeName);
+      }
+    });
+  }, []);
 
   function handleRefresh() {
     setLastUpdated(formatTime(new Date()));
@@ -31,8 +41,8 @@ export default function Header({ onRefresh }: HeaderProps) {
           <p className="mb-1 text-xs font-semibold tracking-wide text-[#c9a55a]">
             LIVE AVAILABILITY
           </p>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            THE BARRACKS COURT
+          <h1 className="text-3xl font-extrabold tracking-tight uppercase">
+            {storeName}
           </h1>
           <div className="mt-2 space-y-0.5 text-sm text-muted-foreground">
             <p>Open 8AM-10PM (til 12MN Fri &amp; Sat) · Max 10 players</p>

@@ -23,6 +23,7 @@ class SettingsController extends Controller {
         });
 
         return response()->json([
+            'storeName' => $settings['storeName'] ?? '',
             'openTime' => $settings['openTime'] ?? '08:00',
             'closeTime' => $settings['closeTime'] ?? '24:00',
             'advanceDays' => isset($settings['advanceDays']) ? (int)$settings['advanceDays'] : 30,
@@ -37,7 +38,7 @@ class SettingsController extends Controller {
         $type = $request->input('type');
 
         if($type === 'hours') {
-            $data = $request->only(['openTime', 'closeTime', 'advanceDays','cancelWindow','timezone']);
+            $data = $request->only(['storeName', 'openTime', 'closeTime', 'advanceDays','cancelWindow','timezone']);
 
             foreach ($data as $key => $value) {
                 Setting::updateOrCreate(

@@ -18,7 +18,7 @@ import {
 const chartConfig = {
     metric: {
         label: "Metric",
-        color: "hsl(var(--secondary))",
+        color: "var(--primary)",
     },
 } satisfies ChartConfig;
 
@@ -97,7 +97,7 @@ export function PricingKPIs({ pricings }: { pricings: any[] }) {
     return (
         <div className="grid auto-rows-min gap-4 md:grid-cols-3">
             {/* Card 1: Total Active Rules */}
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden border-border/70 shadow-sm">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total Active Rules</CardTitle>
                     <div className="text-3xl font-bold">{activeRulesCount}</div>
@@ -109,7 +109,7 @@ export function PricingKPIs({ pricings }: { pricings: any[] }) {
                             <LineChart data={activeRulesByDayData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                                 <YAxis hide domain={['dataMin - 1', 'dataMax + 1']} />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                                <Line type="monotone" dataKey="rules" stroke="white" strokeWidth={3} dot={{ r: 3, fill: "hsl(var(--secondary))" }} activeDot={{ r: 5 }} />
+                                <Line type="monotone" dataKey="rules" stroke="var(--primary)" strokeWidth={3} dot={{ r: 3, fill: "var(--primary)" }} activeDot={{ r: 5 }} />
                             </LineChart>
                         </ChartContainer>
                     </div>
@@ -117,7 +117,7 @@ export function PricingKPIs({ pricings }: { pricings: any[] }) {
             </Card>
 
             {/* Card 2: Average Hourly Rate */}
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden border-border/70 shadow-sm">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Hourly Rate</CardTitle>
                     <div className="text-3xl font-bold">₱{avgHourlyRate.toFixed(2)}</div>
@@ -129,7 +129,7 @@ export function PricingKPIs({ pricings }: { pricings: any[] }) {
                             <LineChart data={avgRateByDayData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                                 <YAxis hide domain={['dataMin - 10', 'dataMax + 10']} />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                                <Line type="monotone" dataKey="rate" stroke="white" strokeWidth={3} dot={{ r: 3, fill: "hsl(var(--secondary))" }} activeDot={{ r: 5 }} />
+                                <Line type="monotone" dataKey="rate" stroke="var(--primary)" strokeWidth={3} dot={{ r: 3, fill: "var(--primary)" }} activeDot={{ r: 5 }} />
                             </LineChart>
                         </ChartContainer>
                     </div>
@@ -137,7 +137,7 @@ export function PricingKPIs({ pricings }: { pricings: any[] }) {
             </Card>
 
             {/* Card 3: Scheduled Hours/Week */}
-            <Card className="overflow-hidden bg-primary text-primary-foreground">
+            <Card className="overflow-hidden border-primary/20 bg-primary text-primary-foreground shadow-sm">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium opacity-90 text-primary-foreground">Scheduled Hours/Week</CardTitle>
                     <div className="text-3xl font-bold">{totalWeeklyHours.toFixed(1)} hrs</div>
@@ -145,11 +145,11 @@ export function PricingKPIs({ pricings }: { pricings: any[] }) {
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="h-[60px] w-full mt-2 opacity-70 hover:opacity-100 transition-opacity">
-                        <ChartContainer config={{ metric: { label: "Hours", color: "hsl(var(--primary-foreground))" } }} className="h-[60px] w-full aspect-auto">
+                        <ChartContainer config={{ metric: { label: "Hours", color: "var(--primary-foreground)" } }} className="h-[60px] w-full aspect-auto">
                             <LineChart data={hoursByDayData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                                 <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel className="text-foreground" />} />
-                                <Line type="monotone" dataKey="hours" stroke="black" strokeWidth={3} dot={{ r: 3, fill: "hsl(var(--primary-foreground))" }} activeDot={{ r: 5 }} />
+                                <Line type="monotone" dataKey="hours" stroke="var(--primary-foreground)" strokeWidth={3} dot={{ r: 3, fill: "var(--primary-foreground)" }} activeDot={{ r: 5 }} />
                             </LineChart>
                         </ChartContainer>
                     </div>

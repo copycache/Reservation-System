@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-import { EllipsisVertical } from "lucide-react";
+import { EllipsisVertical, Plus, Search } from "lucide-react";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 import { PricingForm } from "@/components/admin/pricing/pricing-form";
 import { formatTime } from "@/lib/format_time";
@@ -58,49 +59,63 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-4">
-      <PricingKPIs pricings={pricings} />
-      <div className="grid auto-rows-min gap-4 md:grid-cols-1">
+    <main className="flex flex-1 flex-col gap-8 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-8">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.16em] text-primary">
+            Revenue management
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Pricing</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Configure hourly rates and the schedules that govern court pricing.
+          </p>
+        </div>
 
-        <div className="col-span-full">
+        <PricingKPIs pricings={pricings} />
+
+        <div className="w-full">
           <Tabs defaultValue="all" value={tabValue} onValueChange={setTabValue}>
-            <div className="flex flex-col gap-4 mb-4">
-              <div className="flex items-center justify-between">
-                <TabsList variant="default">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="active">Active</TabsTrigger>
-                  <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-                  <TabsTrigger value="unavailable">Unavailable</TabsTrigger>
-                </TabsList>
+            <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+              <TabsList
+                variant="default"
+                className="order-2 h-auto w-full justify-start gap-1 bg-transparent p-0 lg:order-1 lg:w-auto"
+              >
+                <TabsTrigger value="all">All rules</TabsTrigger>
+                <TabsTrigger value="active">Active</TabsTrigger>
+                <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+                <TabsTrigger value="unavailable">Unavailable</TabsTrigger>
+              </TabsList>
 
-                {/* ── 3.5 Controlled dialog so we can close it from onSuccess ── */}
+              <div className="order-1 flex w-full flex-col gap-2 sm:flex-row lg:order-2 lg:w-auto">
+                <div className="relative w-full lg:w-72">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search by pricing rule"
+                    aria-label="Search pricing rules"
+                    className="h-9 pl-9"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
                 <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                   <DialogTrigger
-                    render={<Button variant="default">Create New Pricing</Button>}
+                    render={
+                      <Button className="h-9 shrink-0">
+                        <Plus className="size-4" />
+                        Add pricing rule
+                      </Button>
+                    }
                   />
-
-                  <PricingForm
-                    formType="create"
-                    onSuccess={handleCreateSuccess}
-                  />
+                  <PricingForm formType="create" onSuccess={handleCreateSuccess} />
                 </Dialog>
               </div>
-
-              <div className="w-full sm:w-80">
-                <Input
-                  type="text"
-                  placeholder="Search pricing..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
             </div>
-
             <PricingTable pricings={pricings} tabValue={tabValue} refreshKey={refreshKey} onRefresh={triggerRefresh} searchQuery={searchQuery} />
           </Tabs>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -130,9 +145,9 @@ export function PricingTable({
   return (
     <TabsContent value={tabValue} className="mt-4">
       <div className="w-full">
-        <div className="overflow-hidden rounded-md border">
-          <Table className="w-full table-fixed">
-            <TableHeader>
+        <div className="overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm">
+          <Table className="w-full min-w-[760px] table-fixed">
+            <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="w-[25%] px-4 font-semibold text-foreground">
                   Name
@@ -214,17 +229,18 @@ export function PricingTable({
                       </TableCell>
 
                       <TableCell className="px-4 text-center">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        <Badge
+                          variant="outline"
+                          className={`capitalize ${
                             pricing.status === "active"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
                               : pricing.status === "maintenance"
-                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                              ? "border-amber-500/30 bg-amber-500/10 text-amber-600"
+                              : "border-rose-500/30 bg-rose-500/10 text-rose-600"
                           }`}
                         >
                           {statusLabel}
-                        </span>
+                        </Badge>
                       </TableCell>
 
                       <TableCell className="px-4 text-right">

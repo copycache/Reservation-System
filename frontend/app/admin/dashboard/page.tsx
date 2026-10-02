@@ -24,9 +24,18 @@ export default function DashboardPage() {
   }, [loadBookingSlots]);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-4">
+    <main className="flex flex-1 flex-col gap-8 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-8">
         <DashboardKPIs bookings={bookings} />
-        <ScheduleCalendar />
-    </div>
+        <section className="space-y-4" aria-labelledby="schedule-heading">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.16em] text-primary">Live schedule</p>
+            <h2 id="schedule-heading" className="mt-1 text-xl font-semibold tracking-tight">Court availability</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Review today&apos;s reservations by court and time.</p>
+          </div>
+          <ScheduleCalendar />
+        </section>
+      </div>
+    </main>
   );
 }

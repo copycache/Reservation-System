@@ -38,7 +38,7 @@ const PERIOD_OPTIONS: { value: Period; label: string }[] = [
 const chartConfig = {
     metric: {
         label: "Metric",
-        color: "hsl(var(--secondary))",
+        color: "var(--primary)",
     },
 } satisfies ChartConfig;
 
@@ -208,7 +208,7 @@ export function BookingsKPIs({ bookings = [] }: { bookings: any[] }) {
         <div className="grid auto-rows-min gap-4 md:grid-cols-3 mb-6">
 
             {/* Card 1: Bookings Volume */}
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden border-border/70 shadow-sm">
                 <CardHeader className="pb-2">
                     <div className="flex items-center justify-between gap-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -243,7 +243,7 @@ export function BookingsKPIs({ bookings = [] }: { bookings: any[] }) {
                                     dataKey="value"
                                     stroke="white"
                                     strokeWidth={3}
-                                    dot={{ r: 3, fill: "hsl(var(--secondary))" }}
+                                    dot={{ r: 3, fill: "var(--primary)" }}
                                     activeDot={{ r: 5 }}
                                 />
                             </LineChart>
@@ -253,7 +253,7 @@ export function BookingsKPIs({ bookings = [] }: { bookings: any[] }) {
             </Card>
 
             {/* Card 2: Active & Upcoming */}
-            <Card className="overflow-hidden bg-primary text-primary-foreground">
+            <Card className="overflow-hidden border-primary/20 bg-primary text-primary-foreground shadow-sm">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium opacity-90 text-primary-foreground">
                         Active &amp; Upcoming
@@ -264,7 +264,7 @@ export function BookingsKPIs({ bookings = [] }: { bookings: any[] }) {
                 <CardContent className="p-0">
                     <div className="h-[60px] w-full mt-2 opacity-70 hover:opacity-100 transition-opacity">
                         <ChartContainer
-                            config={{ metric: { label: "Upcoming", color: "hsl(var(--primary-foreground))" } }}
+                            config={{ metric: { label: "Upcoming", color: "var(--primary-foreground)" } }}
                             className="h-[60px] w-full aspect-auto"
                         >
                             <LineChart data={upcomingData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
@@ -273,9 +273,9 @@ export function BookingsKPIs({ bookings = [] }: { bookings: any[] }) {
                                 <Line
                                     type="monotone"
                                     dataKey="value"
-                                    stroke="black"
+                                    stroke="var(--primary-foreground)"
                                     strokeWidth={3}
-                                    dot={{ r: 3, fill: "hsl(var(--primary-foreground))" }}
+                                    dot={{ r: 3, fill: "var(--primary-foreground)" }}
                                     activeDot={{ r: 5 }}
                                 />
                             </LineChart>
@@ -285,7 +285,7 @@ export function BookingsKPIs({ bookings = [] }: { bookings: any[] }) {
             </Card>
 
             {/* Card 3: Pending Approvals */}
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden border-border/70 shadow-sm">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Pending Approvals</CardTitle>
                     <div className="text-3xl font-bold">{totalPending}</div>
@@ -302,7 +302,7 @@ export function BookingsKPIs({ bookings = [] }: { bookings: any[] }) {
                                     dataKey="value"
                                     stroke="white"
                                     strokeWidth={3}
-                                    dot={{ r: 3, fill: "hsl(var(--secondary))" }}
+                                    dot={{ r: 3, fill: "var(--primary)" }}
                                     activeDot={{ r: 5 }}
                                 />
                             </LineChart>

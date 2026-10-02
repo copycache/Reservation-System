@@ -64,12 +64,22 @@ export function ScheduleCalendar() {
 
   return (
     <div className="min-h-[100vh] flex-1 rounded-xl md:min-h-min">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full rounded-lg border">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="w-full rounded-lg border"
+      >
         <div className="flex items-center justify-between border-b p-4">
           <ButtonGroup>
-            <Button variant="outline" onClick={handleToday}>Today</Button>
-            <Button variant="outline" onClick={handleBack}>Back</Button>
-            <Button variant="outline" onClick={handleNext}>Next</Button>
+            <Button variant="outline" onClick={handleToday}>
+              Today
+            </Button>
+            <Button variant="outline" onClick={handleBack}>
+              Back
+            </Button>
+            <Button variant="outline" onClick={handleNext}>
+              Next
+            </Button>
           </ButtonGroup>
 
           <div>
@@ -84,30 +94,40 @@ export function ScheduleCalendar() {
             </p>
           </div>
 
-          <TabsList>
-            {loading ? (
-              <div className="flex space-x-2">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-8 w-20" />
-              </div>
-            ) : courts.length > 0 ? (
-              courts.map((court) => (
-                <TabsTrigger key={court.court_id} value={court.court_id.toString()}>
+          {loading ? (
+            <div className="flex space-x-2">
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20" />
+            </div>
+          ) : courts.length === 1 ? (
+            <div className="text-sm text-muted-foreground px-4">
+              1 court found
+            </div>
+          ) : courts.length > 1 ? (
+            <TabsList>
+              {courts.map((court) => (
+                <TabsTrigger
+                  key={court.court_id}
+                  value={court.court_id.toString()}
+                >
                   {court.court_name}
                 </TabsTrigger>
-              ))
-            ) : (
-              <div className="text-sm text-muted-foreground px-4">No courts found</div>
-            )}
-          </TabsList>
+              ))}
+            </TabsList>
+          ) : (
+            <div className="text-sm text-muted-foreground px-4">
+              No courts found
+            </div>
+          )}
         </div>
-        {!loading && courts.map((court) => (
-          <TabsContent key={court.court_id} value={court.court_id.toString()}>
-            {" "}
-            <DayCalendar date={currentDate} courtId={court.court_id} />{" "}
-          </TabsContent>
-        ))}
+        {!loading &&
+          courts.map((court) => (
+            <TabsContent key={court.court_id} value={court.court_id.toString()}>
+              {" "}
+              <DayCalendar date={currentDate} courtId={court.court_id} />{" "}
+            </TabsContent>
+          ))}
       </Tabs>
     </div>
   );

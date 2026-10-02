@@ -31,6 +31,7 @@ export default function SettingsPage() {
   const [isPendingUser, startTransitionUser] = useTransition();
 
   const [settings, setSettings] = useState<any>({
+    storeName: "",
     openTime: "08:00",
     closeTime: "22:00",
     advanceDays: 30,
@@ -139,6 +140,10 @@ export default function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="storeName">Store Name</Label>
+                  <Input id="storeName" value={settings.storeName} onChange={(e) => setSettings({...settings, storeName: e.target.value})} />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="openTime">Opening Time</Label>

@@ -38,7 +38,7 @@ const PERIOD_OPTIONS: { value: Period; label: string }[] = [
 const chartConfig = {
     metric: {
         label: "Metric",
-        color: "hsl(var(--secondary))",
+        color: "var(--primary)",
     },
 } satisfies ChartConfig;
 
@@ -234,7 +234,7 @@ export function CourtKPIs({ courts = [], bookings = [] }: { courts: any[]; booki
         <div className="grid auto-rows-min gap-4 md:grid-cols-3 mb-6">
 
             {/* Card 1: Active Courts */}
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden border-border/70 shadow-sm">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Active Courts</CardTitle>
                     <div className="text-3xl font-bold">{activeCourtsCount}</div>
@@ -254,7 +254,7 @@ export function CourtKPIs({ courts = [], bookings = [] }: { courts: any[]; booki
             </Card>
 
             {/* Card 2: Courts in Maintenance */}
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden border-border/70 shadow-sm">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">In Maintenance</CardTitle>
                     <div className="text-3xl font-bold">{maintenanceCourtsCount}</div>
@@ -274,7 +274,7 @@ export function CourtKPIs({ courts = [], bookings = [] }: { courts: any[]; booki
             </Card>
 
             {/* Card 3: Most Popular Court (INVERTED STYLE) */}
-            <Card className="overflow-hidden bg-primary text-primary-foreground">
+            <Card className="overflow-hidden border-primary/20 bg-primary text-primary-foreground shadow-sm">
                 <CardHeader className="pb-2">
                     <div className="flex items-center justify-between gap-2">
                         <CardTitle className="text-sm font-medium opacity-90 text-primary-foreground">
@@ -301,7 +301,7 @@ export function CourtKPIs({ courts = [], bookings = [] }: { courts: any[]; booki
                 <CardContent className="p-0">
                     <div className="h-[60px] w-full mt-2 opacity-70 hover:opacity-100 transition-opacity">
                         <ChartContainer
-                            config={{ metric: { label: "Bookings", color: "hsl(var(--primary-foreground))" } }}
+                            config={{ metric: { label: "Bookings", color: "var(--primary-foreground)" } }}
                             className="h-[60px] w-full aspect-auto"
                         >
                             <LineChart data={popularCourtData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
@@ -310,7 +310,7 @@ export function CourtKPIs({ courts = [], bookings = [] }: { courts: any[]; booki
                                 <Line
                                     type="monotone"
                                     dataKey="value"
-                                    stroke="black"
+                                    stroke="var(--primary-foreground)"
                                     strokeWidth={3}
                                     dot={false}
                                     activeDot={{ r: 5 }}

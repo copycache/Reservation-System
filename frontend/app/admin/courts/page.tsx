@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-import { EllipsisVertical } from "lucide-react";
+import { EllipsisVertical, Plus, Search } from "lucide-react";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 import { CourtForm } from "@/components/admin/court/court-form";
 import { CourtKPIs } from "@/components/admin/court/court-kpis";
@@ -45,43 +46,62 @@ export default function CourtPage() {
   }, [loadData]);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-4">
-      <CourtKPIs courts={courts} bookings={bookings} />
-      
-      <div className="w-full">
+    <main className="flex flex-1 flex-col gap-8 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-8">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.16em] text-primary">
+            Facility management
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Courts</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Monitor court availability, capacity, and maintenance status.
+          </p>
+        </div>
+
+        <CourtKPIs courts={courts} bookings={bookings} />
+
         <Tabs defaultValue="all" value={tabValue} onValueChange={setTabValue}>
-            <div className="flex flex-col gap-4 mb-4">
-              <div className="flex items-center justify-between">
-                <TabsList variant="default">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="active">Active</TabsTrigger>
-                  <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-                  <TabsTrigger value="unavailable">Unavailable</TabsTrigger>
-                </TabsList>
+          <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+            <TabsList
+              variant="default"
+              className="order-2 h-auto w-full justify-start gap-1 bg-transparent p-0 lg:order-1 lg:w-auto"
+            >
+              <TabsTrigger value="all">All courts</TabsTrigger>
+              <TabsTrigger value="active">Active</TabsTrigger>
+              <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+              <TabsTrigger value="unavailable">Unavailable</TabsTrigger>
+            </TabsList>
 
-                <Dialog>
-                  <DialogTrigger
-                    render={<Button variant="default">Create New Court</Button>}
-                  />
-
-                  <CourtForm formType={"create"} />
-                </Dialog>
-              </div>
-
-              <div className="w-full sm:w-80">
+            <div className="flex order-1 w-full flex-col gap-2 sm:flex-row lg:order-2 lg:w-auto">
+              <div className="relative w-full lg:w-72">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search courts..."
+                  placeholder="Search by court or type"
+                  aria-label="Search courts"
+                  className="h-9 pl-9"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+              <Dialog>
+                <DialogTrigger
+                  render={
+                    <Button className="h-9 shrink-0">
+                      <Plus className="size-4" />
+                      Add court
+                    </Button>
+                  }
+                />
+                <CourtForm formType={"create"} />
+              </Dialog>
             </div>
+          </div>
 
-            <CourtTable tabValue={tabValue} courts={courts} searchQuery={searchQuery} />
-          </Tabs>
+          <CourtTable tabValue={tabValue} courts={courts} searchQuery={searchQuery} />
+        </Tabs>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -91,9 +111,9 @@ export function CourtTable({ tabValue, courts, searchQuery }: { tabValue: string
   return (
     <TabsContent value={tabValue} className="mt-4">
       <div className="w-full">
-        <div className="overflow-hidden rounded-md border">
-          <Table className="w-full table-fixed">
-            <TableHeader>
+        <div className="overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm">
+          <Table className="w-full min-w-[680px] table-fixed">
+            <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="w-[25%] px-4 font-semibold text-foreground">
                   Court
@@ -142,7 +162,7 @@ export function CourtTable({ tabValue, courts, searchQuery }: { tabValue: string
                     </TableCell>
 
                     <TableCell className="px-4">
-                      <div className="truncate">{court.status}</div>
+                      <CourtStatus status={court.status} />
                     </TableCell>
 
                     <TableCell className="px-4 text-center">
@@ -173,5 +193,19 @@ export function CourtTable({ tabValue, courts, searchQuery }: { tabValue: string
         </div>
       </div>
     </TabsContent>
+  );
+}
+
+function CourtStatus({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    active: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600",
+    maintenance: "border-amber-500/30 bg-amber-500/10 text-amber-600",
+    unavailable: "border-rose-500/30 bg-rose-500/10 text-rose-600",
+  };
+
+  return (
+    <Badge variant="outline" className={`capitalize ${styles[status] ?? ""}`}>
+      {status}
+    </Badge>
   );
 }

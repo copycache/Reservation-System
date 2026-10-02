@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   ChevronDown,
@@ -38,6 +38,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import { getSettings } from "@/app/admin/settings/actions";
 
 type Tab = {
   title: string;
@@ -82,12 +83,7 @@ const tabs: Tab[] = [
     children: [
       {
         title: "Revenue",
-        url: "/admin/revenue",
-        icon: null,
-      },
-      {
-        title: "Booking Report",
-        url: "/admin/booking-report",
+        url: "/admin/revenue-report",
         icon: null,
       },
     ],
@@ -101,10 +97,19 @@ const tabs: Tab[] = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const [storeName, setStoreName] = useState("Reservation System");
 
   const [openMenus, setOpenMenus] = useState({
     Reports: true,
   });
+
+  useEffect(() => {
+    getSettings().then((settings) => {
+      if (settings?.storeName) {
+        setStoreName(settings.storeName);
+      }
+    });
+  }, []);
 
   function toggleMenu(name: string) {
     setOpenMenus((menus) => ({
@@ -215,7 +220,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton>
-              asd
+              {storeName}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

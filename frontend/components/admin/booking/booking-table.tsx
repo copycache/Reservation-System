@@ -28,7 +28,7 @@ import { formatTime } from "@/lib/format_time";
  * Returns a human-readable string e.g. "1 hr", "30 min", "1 hr 30 min".
  */
 function formatDuration(
-  slots: { start_time: string; end_time: string }[],
+  slots: { date?: string; start_time: string; end_time: string }[],
 ): string {
   if (!slots || slots.length === 0) return "—";
 
@@ -37,7 +37,16 @@ function formatDuration(
     return h * 60 + (m || 0);
   };
 
-  const totalMinutes = slots.reduce((sum, slot) => {
+  // Deduplicate slots based on their time span so we don't count the same time block multiple times (for multiple courts)
+  const uniqueSlotsMap = new Map();
+  slots.forEach((slot) => {
+    const key = `${slot.date || 'nodate'}-${slot.start_time}-${slot.end_time}`;
+    uniqueSlotsMap.set(key, slot);
+  });
+  
+  const uniqueSlots = Array.from(uniqueSlotsMap.values());
+
+  const totalMinutes = uniqueSlots.reduce((sum, slot) => {
     const start = toMinutes(slot.start_time);
     const end = toMinutes(slot.end_time);
     // Midnight crossing: end "00:00" means 24 * 60
@@ -144,7 +153,7 @@ export function BookingTable({ tabValue, searchQuery, bookings, loadBookingSlots
                   return (
                     String(slot.booking_number || "").toLowerCase().includes(query) ||
                     String(slot.customers?.name || "").toLowerCase().includes(query) ||
-                    String(slot.booking_slots?.[0]?.court?.type || "").toLowerCase().includes(query)
+                    slot.booking_slots?.some((s: any) => String(s.court?.type || "").toLowerCase().includes(query))
                   );
                 })
                 .map((booking) => (
@@ -158,17 +167,30 @@ export function BookingTable({ tabValue, searchQuery, bookings, loadBookingSlots
                     <TableCell className="min-w-[180px] px-4">
                       {booking.customers?.name}
                     </TableCell>
-                    <TableCell className="min-w-[120px] px-4 whitespace-nowrap capitalize">
-                      {booking.booking_slots?.[0]?.court?.type ?? "—"}
+                    <TableCell className="min-w-[120px] px-4 whitespace-normal capitalize">
+                      {booking.booking_slots && booking.booking_slots.length > 0 
+                        ? Array.from(new Set(booking.booking_slots.map((s: any) => s.court?.type).filter(Boolean))).join(", ") 
+                        : "—"}
                     </TableCell>
                     <TableCell className="w-[180px] px-4 text-center whitespace-nowrap">
-                      {booking.booking_slots?.map((booking_slot: any) => (
-                        <div key={booking_slot.booking_slot_id}>
-                          {formatDate(booking_slot.date, false)},{" "}
-                          {formatTime(booking_slot.start_time, false)} -{" "}
-                          {formatTime(booking_slot.end_time, true)}
-                        </div>
-                      ))}
+                      {(() => {
+                        if (!booking.booking_slots) return null;
+                        
+                        // Deduplicate slots for display so we don't show identical time blocks multiple times
+                        const uniqueMap = new Map();
+                        booking.booking_slots.forEach((slot: any) => {
+                          const key = `${slot.date}-${slot.start_time}-${slot.end_time}`;
+                          if (!uniqueMap.has(key)) uniqueMap.set(key, slot);
+                        });
+                        
+                        return Array.from(uniqueMap.values()).map((booking_slot: any) => (
+                          <div key={booking_slot.booking_slot_id}>
+                            {formatDate(booking_slot.date, false)},{" "}
+                            {formatTime(booking_slot.start_time, false)} -{" "}
+                            {formatTime(booking_slot.end_time, true)}
+                          </div>
+                        ));
+                      })()}
                     </TableCell>
 
                     <TableCell className="w-[110px] px-4 text-center whitespace-nowrap">

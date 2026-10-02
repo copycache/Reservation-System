@@ -148,8 +148,17 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
     const fbName = String(formData.get("fb_name") || "");
     const email = String(formData.get("email") || "");
     
+    const submitter = (event.nativeEvent as any).submitter;
+    const action = submitter?.value;
+
+    let finalStatus = selectedStatus;
+    if (formType === "edit") {
+      if (action === "approve") finalStatus = "booked";
+      if (action === "cancel_booking") finalStatus = "cancelled";
+    }
+    
     if (formType === "edit" && editData) {
-      formData.append("status", selectedStatus);
+      formData.append("status", finalStatus);
       formData.append("court_id", selectedCourts[0] || "");
       selectedCourts.forEach((id) => formData.append("court_ids[]", id));
       formData.append("court_ids", JSON.stringify(selectedCourts));
@@ -166,7 +175,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
               name,
               fb_name: fbName,
               email,
-              status: selectedStatus,
+              status: finalStatus,
               court_id: selectedCourts[0] || "",
               court_ids: selectedCourts,
             }),
@@ -275,10 +284,12 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                   {formatTime(slot.end_time)} — ₱{slot.subtotal.toFixed(0)}
                 </div>
               ))}
-
-              <p className="text-xs font-bold border-t border-border py-2">
-                Total to send: ₱{total.toFixed(0)}
-              </p>
+              
+              {formType !== "edit" && (
+                <p className="text-xs font-bold border-t border-border py-2">
+                  Total to send: ₱{total.toFixed(0)}
+                </p>
+              )}
             </DialogHeader>
 
             <FieldGroup>
@@ -420,23 +431,74 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                 </Field>
               )}
 
+               {formType === "edit" && editData?.bookings && (
+              <div className="mb-4 rounded-lg border border-border/50 bg-muted/10 p-4 text-sm space-y-2 mt-4">
+                <p className="font-semibold text-primary border-b pb-2 mb-2">Additional Details</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="text-muted-foreground">Extra Players:</div>
+                  <div className="font-medium">{editData.bookings.additional_players || '0'}</div>
+
+                  {editData.bookings.payment_proof && (
+                    <>
+                      <div className="text-muted-foreground">Proof of Payment:</div>
+                      <div>
+                        <a 
+                          href={`${process.env.NEXT_PUBLIC_API_URL || ""}/storage/${editData.bookings.payment_proof}`}
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[#d4a24c] hover:underline font-bold"
+                        >
+                          View Screenshot
+                        </a>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
               
               
             </FieldGroup>
 
-            <DialogFooter className="mt-4 sm:justify-center flex-col gap-2">
+                        <DialogFooter className="mt-4 flex-col gap-2">
               {bookingError && (
                 <p className="w-full text-center text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
                   ⚠️ {bookingError}
                 </p>
               )}
-              <Button
-                type="submit"
-                className="w-full h-12 rounded-xl bg-[#d4a24c] font-bold text-primary hover:bg-[#e1b45f]"
-              >
-                {formType === "edit" ? "Save Edit" : "Submit booking"}
-              </Button>
+              
+              {/* ---> UPDATED BUTTONS <--- */}
+              {formType === "edit" ? (
+                <div className="flex w-full flex-row gap-3 mt-2">
+                  <Button
+                    type="submit"
+                    name="action"
+                    value="cancel_booking"
+                    variant="outline"
+                    className="flex-1 h-12 rounded-xl border-2 text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                  >
+                    Cancel Booking
+                  </Button>
+                  <Button
+                    type="submit"
+                    name="action"
+                    value="approve"
+                    className="flex-1 h-12 rounded-xl bg-[#d4a24c] font-bold text-white hover:bg-[#e1b45f]"
+                  >
+                    Approve
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="submit"
+                  className="w-full h-12 rounded-xl bg-[#d4a24c] font-bold text-white hover:bg-[#e1b45f]"
+                >
+                  Submit booking
+                </Button>
+              )}
             </DialogFooter>
+
           </form>
         </DialogContent>
       </Dialog>
@@ -475,7 +537,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
             <p className="text-xs font-bold border-t border-border py-2">
               Total sent: ₱{submittedTotal.toFixed(0)} · {customerName}
             </p>
-          </DialogHeader>
+             </DialogHeader>
 
           <div className="mx-auto text-center">
             <p className="text-xs">

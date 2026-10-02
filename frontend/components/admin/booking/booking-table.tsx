@@ -21,6 +21,8 @@ import { ViewBooking } from "@/components/admin/booking/view-booking";
 import { formatDate } from "@/lib/format_date";
 import { formatTime } from "@/lib/format_time";
 
+
+
 /**
  * Compute and format the total duration across all booking slots.
  * Each slot contributes (end_time - start_time) minutes.

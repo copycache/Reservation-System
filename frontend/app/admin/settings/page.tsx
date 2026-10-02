@@ -33,7 +33,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<any>({
     storeName: "",
     GcashNumber: "",
-    GCashName: "",
+    GcashName: "",
   });
 
   useEffect(() => {

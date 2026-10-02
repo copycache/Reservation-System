@@ -273,15 +273,14 @@ export function CourtKPIs({ courts = [], bookings = [] }: { courts: any[]; booki
                 </CardContent>
             </Card>
 
-            {/* Card 3: Most Popular Court (INVERTED STYLE) */}
-            <Card className="overflow-hidden border-primary/20 bg-primary text-primary-foreground shadow-sm">
+            <Card className="overflow-hiddenborder-border/70 shadow-sm">
                 <CardHeader className="pb-2">
                     <div className="flex items-center justify-between gap-2">
-                        <CardTitle className="text-sm font-medium opacity-90 text-primary-foreground">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
                             Most Popular Court
                         </CardTitle>
                         <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-                            <SelectTrigger className="h-7 w-[110px] text-xs px-2 py-0 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">
+                            <SelectTrigger className="h-7 w-[110px] text-xs px-2 py-0">
                                 <SelectValue placeholder="Period" />
                             </SelectTrigger>
                             <SelectContent align="end">
@@ -294,7 +293,7 @@ export function CourtKPIs({ courts = [], bookings = [] }: { courts: any[]; booki
                         </Select>
                     </div>
                     <div className="text-3xl font-bold truncate">{popularCourtName}</div>
-                    <p className="text-xs opacity-80 text-primary-foreground">
+                    <p className="text-xs text-muuted-foreground">
                         {periodLabel} · Highest booking volume
                     </p>
                 </CardHeader>
@@ -310,7 +309,7 @@ export function CourtKPIs({ courts = [], bookings = [] }: { courts: any[]; booki
                                 <Line
                                     type="monotone"
                                     dataKey="value"
-                                    stroke="var(--primary-foreground)"
+                                    stroke="white"
                                     strokeWidth={3}
                                     dot={false}
                                     activeDot={{ r: 5 }}

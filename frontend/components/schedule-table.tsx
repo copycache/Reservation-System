@@ -262,6 +262,22 @@ export default function ScheduleTable({
     new Map(),
   );
 
+  const [courtsCount, setCourtsCount] = useState<number>(0);
+
+  const loadCourtsCount = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/public/courts`, {
+        headers: { Accept: "application/json" },
+      });
+      if (response.ok) {
+        const courts = await response.json();
+        setCourtsCount(courts.length);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // ── 4.2 Fetch active pricing rules (public endpoint, no auth required) ────
   const loadPricingRules = useCallback(async () => {
     setIsPricingLoading(true);
@@ -358,24 +374,37 @@ export default function ScheduleTable({
     `${formatTime(startTime)}-${formatTime(endTime)}`;
 
   const getCellStatus = (date: Date, startTime: string, endTime: string) => {
-    const slot = bookingSlots.find((bookingSlot) => {
+    const slotsForTime = bookingSlots.filter((bookingSlot) => {
       return (
         bookingSlot.date === toDateKey(date) &&
         bookingSlot.start_time === startTime &&
-        bookingSlot.end_time === endTime
+        bookingSlot.end_time === endTime &&
+        bookingSlot.bookings?.status !== "cancelled"
       );
     });
 
-    if (!slot || slot.bookings?.status === "cancelled") {
+    if (slotsForTime.length === 0) {
       return "Open";
     }
 
-    if (slot.status === "booked") return "Booked";
-    if (slot.status === "open_play") return "Open Play";
-    if (slot.status === "club") return "Club";
-    if (slot.status === "pending") return "Pending";
-    if (slot.status === "closed") return "Closed";
-    if (slot.status === "--") return "--";
+    const activeSlots = slotsForTime.filter(s => s.status && s.status !== "open");
+
+    // If not all courts are occupied, there is still availability
+    if (courtsCount > 0 && activeSlots.length < courtsCount) {
+      return "Open";
+    }
+
+    // If we reach here, all courts are occupied or courtsCount is 0 (fallback)
+    // Priority for mixed statuses: Pending > Open Play > Club > Closed > Booked
+    const statuses = new Set(activeSlots.map(s => s.status));
+    
+    if (statuses.has("pending")) return "Pending";
+    if (statuses.has("open_play")) return "Open Play";
+    if (statuses.has("club")) return "Club";
+    if (statuses.has("closed")) return "Closed";
+    if (statuses.has("booked")) return "Booked";
+    
+    if (activeSlots.length > 0) return "Booked";
 
     return "Open";
   };
@@ -429,7 +458,8 @@ export default function ScheduleTable({
   useEffect(() => {
     loadPricingRules();
     loadBookingSlots();
-  }, [loadPricingRules, loadBookingSlots, refreshKey]);
+    loadCourtsCount();
+  }, [loadPricingRules, loadBookingSlots, loadCourtsCount, refreshKey]);
 
   // ── 4.6 Show skeleton while either fetch is in flight ─────────────────────
   const showSkeleton = isSlotsLoading || isPricingLoading;

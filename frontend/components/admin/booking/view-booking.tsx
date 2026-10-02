@@ -99,7 +99,8 @@ export function ViewBooking({ bookingId, ontableReload }: ViewProps) {
               >
                 <div>
                   <p className="text-sm font-medium text-white">
-                    {formatDate(booking_slot.date)}
+                    {formatDate(booking_slot.date)} 
+                    {booking_slot.court?.type && <span className="ml-2 text-neutral-400">({booking_slot.court.type})</span>}
                   </p>
                   <p className="text-sm text-neutral-400">
                     {formatTime(booking_slot.start_time)} –{" "}

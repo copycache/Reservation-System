@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatTime } from "@/lib/format_time";
+import { HomepageForm } from "../homepage-form";
 
 const weekDays = [
   "Sunday",
@@ -32,15 +33,18 @@ type CalendarEvent = {
   court: string;
   courtType: string;
   status: string;
+  rawSlot?: any;
+  rawBooking?: any;
 };
 
 export function BigCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
-  useEffect(() => {
-    async function fetchBookings() {
-      try {
+  async function fetchBookings() {
+    try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/booking`
         );
@@ -53,13 +57,15 @@ export function BigCalendar() {
           if (booking.status !== "cancelled" && booking.booking_slots) {
             booking.booking_slots.forEach((slot: any) => {
               newEvents.push({
-                id: slot.id || Math.random().toString(),
+                id: slot.booking_slot_id || slot.id || Math.random().toString(),
                 date: slot.date, // Format from API should be YYYY-MM-DD
                 title: booking.customers?.name || "Unknown",
                 time: `${formatTime(slot.start_time, true)} - ${formatTime(slot.end_time, true)}`,
                 court: slot.court?.court_name || "Court",
                 courtType: slot.court?.type || "",
                 status: slot.status,
+                rawSlot: slot,
+                rawBooking: booking,
               });
             });
           }
@@ -71,6 +77,7 @@ export function BigCalendar() {
       }
     }
 
+  useEffect(() => {
     fetchBookings();
   }, []);
 
@@ -215,12 +222,28 @@ export function BigCalendar() {
                           {dayEvents.map((event, index) => (
                             <div
                               key={index}
-                              className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20 flex flex-col leading-tight"
+                              onClick={() => {
+                                setSelectedEvent(event)
+                                setIsEditOpen(true);
+                              }}
+                              className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20 flex flex-col leading-tight cursor-pointer"
                             >
-                              <div className="truncate" title={`${event.title} - ${event.court}${event.courtType ? ` (${event.courtType})` : ""}`}>
-                                {event.title} {event.courtType ? `- ${event.courtType}` : ""}
+                              <div className="flex justify-between items-start gap-1">
+                                <div className="truncate font-semibold" title={`${event.title} - ${event.court}${event.courtType ? ` (${event.courtType})` : ""}`}>
+                                  {event.title} {event.courtType ? `- ${event.courtType}` : ""}
+                                </div>
+                                {event.status && (
+                                  <span className={`text-[8px] px-1 py-0.5 rounded-sm font-bold uppercase ${
+                                    event.status === "booked" ? "bg-green-500/20 text-green-700" :
+                                    event.status === "cancelled" ? "bg-red-500/20 text-red-700" :
+                                    event.status === "pending" ? "bg-yellow-500/20 text-yellow-700" :
+                                    "bg-black/10 text-black/70 dark:bg-white/10 dark:text-white/70"
+                                  }`}>
+                                    {event.status}
+                                  </span>
+                                )}
                               </div>
-                              <div className="text-[10px] opacity-80 truncate" title={event.time}>
+                              <div className="text-[10px] opacity-80 truncate mt-0.5" title={event.time}>
                                 {event.time}
                               </div>
                             </div>
@@ -235,6 +258,36 @@ export function BigCalendar() {
           ))}
         </TableBody>
       </Table>
+
+      {selectedEvent && (
+        <HomepageForm
+          formType="edit"
+          open={isEditOpen}
+          onOpenChange={setIsEditOpen}
+          hideTrigger={true}
+          onBookingSubmitted={() => {
+            fetchBookings();
+            setIsEditOpen(false);
+          }}
+          data={new Map([
+            ["slot", {
+              date: selectedEvent.rawSlot.date,
+              start_time: selectedEvent.rawSlot.start_time,
+              end_time: selectedEvent.rawSlot.end_time,
+              subtotal: parseFloat(selectedEvent.rawSlot.price || "0")
+            }]
+          ])}
+          editData={{
+            booking_slot_id: selectedEvent.rawSlot.booking_slot_id || selectedEvent.rawSlot.id,
+            court_id: selectedEvent.rawSlot.court_id,
+            status: selectedEvent.rawSlot.status,
+            date: selectedEvent.rawSlot.date,
+            start_time: selectedEvent.rawSlot.start_time,
+            bookings: selectedEvent.rawBooking
+          }}
+        />
+      )}
     </div>
   );
 }
+

@@ -137,11 +137,11 @@ export function PricingKPIs({ pricings }: { pricings: any[] }) {
             </Card>
 
             {/* Card 3: Scheduled Hours/Week */}
-            <Card className="overflow-hidden border-primary/20 bg-primary text-primary-foreground shadow-sm">
+            <Card className="overflow-hidden border-border/70 shadow-sm">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium opacity-90 text-primary-foreground">Scheduled Hours/Week</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Scheduled Hours/Week</CardTitle>
                     <div className="text-3xl font-bold">{totalWeeklyHours.toFixed(1)} hrs</div>
-                    <p className="text-xs opacity-80 text-primary-foreground">Total availability</p>
+                    <p className="text-xs text-muted-foreground">Total availability</p>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="h-[60px] w-full mt-2 opacity-70 hover:opacity-100 transition-opacity">
@@ -149,7 +149,7 @@ export function PricingKPIs({ pricings }: { pricings: any[] }) {
                             <LineChart data={hoursByDayData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                                 <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel className="text-foreground" />} />
-                                <Line type="monotone" dataKey="hours" stroke="var(--primary-foreground)" strokeWidth={3} dot={{ r: 3, fill: "var(--primary-foreground)" }} activeDot={{ r: 5 }} />
+                                <Line type="monotone" dataKey="hours" stroke="white" strokeWidth={3} dot={{ r: 3, fill: "white" }} activeDot={{ r: 5 }} />
                             </LineChart>
                         </ChartContainer>
                     </div>

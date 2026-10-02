@@ -253,13 +253,13 @@ export function BookingsKPIs({ bookings = [] }: { bookings: any[] }) {
             </Card>
 
             {/* Card 2: Active & Upcoming */}
-            <Card className="overflow-hidden border-primary/20 bg-primary text-primary-foreground shadow-sm">
+            <Card className="overflow-hidden border-border/70 shadow-sm">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium opacity-90 text-primary-foreground">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
                         Active &amp; Upcoming
                     </CardTitle>
                     <div className="text-3xl font-bold">{totalUpcoming}</div>
-                    <p className="text-xs opacity-80 text-primary-foreground">Scheduled for today &amp; future</p>
+                    <p className="text-xs text-muted-foreground">Scheduled for today &amp; future</p>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="h-[60px] w-full mt-2 opacity-70 hover:opacity-100 transition-opacity">
@@ -273,9 +273,9 @@ export function BookingsKPIs({ bookings = [] }: { bookings: any[] }) {
                                 <Line
                                     type="monotone"
                                     dataKey="value"
-                                    stroke="var(--primary-foreground)"
+                                    stroke="white"
                                     strokeWidth={3}
-                                    dot={{ r: 3, fill: "var(--primary-foreground)" }}
+                                    dot={{ r: 3, fill: "white" }}
                                     activeDot={{ r: 5 }}
                                 />
                             </LineChart>

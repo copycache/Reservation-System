@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "cn";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -11,12 +12,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDate } from "@/lib/format_date";
 import { formatTime } from "@/lib/format_time";
+import { getSettings } from "@/app/admin/settings/actions";
 
 type BookingSlot = {
   date: string;
@@ -50,8 +54,10 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
   const [bookingOpen, setBookingOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [courts, setCourts] = useState<any[]>([]);
-  const [selectedCourt, setSelectedCourt] = useState<string>("");
+  const [selectedCourts, setSelectedCourts] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [GcashName, setGcashName] = useState<string>("");
+  const [GcashNumber, setGcashNumber] = useState<string>("");
 
   useEffect(() => {
     async function loadCourts() {
@@ -61,7 +67,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
           const courtsData = await res.json();
           setCourts(courtsData);
           if (courtsData.length === 1) {
-            setSelectedCourt(courtsData[0].court_id.toString());
+            setSelectedCourts([courtsData[0].court_id.toString()]);
           }
         }
       } catch (err) {
@@ -72,38 +78,53 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
   }, []);
 
   useEffect(() => {
+    getSettings().then((settings) => {
+      setGcashName(settings?.GcashName || "")
+      setGcashNumber(settings?.GcashNumber || "")
+    })
+  }, [GcashName, GcashNumber]);
+
+  useEffect(() => {
     if (formType === "edit" && editData) {
-      if (editData.court_id) setSelectedCourt(editData.court_id.toString());
+      if (editData.court_id) setSelectedCourts([editData.court_id.toString()]);
       if (editData.status) setSelectedStatus(editData.status);
     } else {
       setSelectedStatus("");
-      if (defaultCourtId) setSelectedCourt(defaultCourtId.toString());
+      if (defaultCourtId) setSelectedCourts([defaultCourtId.toString()]);
     }
   }, [formType, editData, defaultCourtId]);
 
-  // Compute which court IDs are unavailable for the selected slots.
-  // A court is "booked" if any existing non-cancelled slot overlaps
-  // with any of the user's selected date + time combinations.
+  // Compute the status of each court for the selected slots.
   const selectedSlotList = Array.from(data.values());
-  const bookedCourtIds = new Set(
-    bookingSlots
-      .filter((existing) => {
-        if (!existing.court_id) return false;
-        // Skip current edit data so we don't disable the currently assigned court
-        if (formType === "edit" && editData && existing.date === editData.date && existing.start_time === editData.start_time && existing.court_id === editData.court_id) {
-          return false;
-        }
-        if (existing.bookings?.status === "cancelled") return false;
-        if (!existing.status || existing.status === "open") return false;
-        return selectedSlotList.some(
-          (sel) =>
-            sel.date === existing.date &&
-            sel.start_time === existing.start_time &&
-            sel.end_time === existing.end_time,
-        );
-      })
-      .map((existing) => existing.court_id as number),
-  );
+  const courtStatusMap = new Map<number, string>();
+  
+  bookingSlots.forEach((existing) => {
+    if (!existing.court_id) return;
+    // Skip current edit data so we don't disable the currently assigned court
+    if (formType === "edit" && editData && existing.date === editData.date && existing.start_time === editData.start_time && existing.court_id === editData.court_id) {
+      return;
+    }
+    if (existing.bookings?.status === "cancelled") return;
+    if (!existing.status || existing.status === "open") return;
+    
+    const overlaps = selectedSlotList.some(
+      (sel) =>
+        sel.date === existing.date &&
+        sel.start_time === existing.start_time &&
+        sel.end_time === existing.end_time,
+    );
+    
+    if (overlaps) {
+      const currentStatus = courtStatusMap.get(existing.court_id);
+      if (existing.status === "booked" || existing.status === "closed") {
+        courtStatusMap.set(existing.court_id, "Booked");
+      } else if (existing.status === "pending" && currentStatus !== "Booked") {
+        courtStatusMap.set(existing.court_id, "Pending");
+      } else if (!currentStatus) {
+        courtStatusMap.set(existing.court_id, "Unavailable");
+      }
+    }
+  });
 
   const [customerName, setCustomerName] = useState("");
   const [bookingNumber, setBookingNumber] = useState("");
@@ -115,7 +136,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
 
   const total = slots.reduce((sum, slot) => {
     return sum + slot.subtotal;
-  }, 0);
+  }, 0) * Math.max(1, selectedCourts.length);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -127,9 +148,20 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
     const fbName = String(formData.get("fb_name") || "");
     const email = String(formData.get("email") || "");
     
+    const submitter = (event.nativeEvent as any).submitter;
+    const action = submitter?.value;
+
+    let finalStatus = selectedStatus;
+    if (formType === "edit") {
+      if (action === "approve") finalStatus = "booked";
+      if (action === "cancel_booking") finalStatus = "cancelled";
+    }
+    
     if (formType === "edit" && editData) {
-      formData.append("status", selectedStatus);
-      formData.append("court_id", selectedCourt);
+      formData.append("status", finalStatus);
+      formData.append("court_id", selectedCourts[0] || "");
+      selectedCourts.forEach((id) => formData.append("court_ids[]", id));
+      formData.append("court_ids", JSON.stringify(selectedCourts));
       
       try {
         const response = await fetch(
@@ -143,8 +175,9 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
               name,
               fb_name: fbName,
               email,
-              status: selectedStatus,
-              court_id: selectedCourt,
+              status: finalStatus,
+              court_id: selectedCourts[0] || "",
+              court_ids: selectedCourts,
             }),
           },
         );
@@ -170,6 +203,8 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
     const payment = formData.get("payment");
     formData.append("slots", JSON.stringify(slots));
     formData.append("total", String(total));
+    formData.append("court_ids", JSON.stringify(selectedCourts));
+    selectedCourts.forEach((id) => formData.append("court_ids[]", id));
     
     if (formType !== "homepage") {
       formData.append("status", selectedStatus);
@@ -249,10 +284,12 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                   {formatTime(slot.end_time)} — ₱{slot.subtotal.toFixed(0)}
                 </div>
               ))}
-
-              <p className="text-xs font-bold border-t border-border py-2">
-                Total to send: ₱{total.toFixed(0)}
-              </p>
+              
+              {formType !== "edit" && (
+                <p className="text-xs font-bold border-t border-border py-2">
+                  Total to send: ₱{total.toFixed(0)}
+                </p>
+              )}
             </DialogHeader>
 
             <FieldGroup>
@@ -284,11 +321,11 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                   <Label htmlFor="status">Booking Status *</Label>
                   <Select name="status" required value={selectedStatus} onValueChange={(value) => setSelectedStatus(value ?? "")}>
                     <SelectTrigger className="h-11 focus-visible:ring-[#d4a24c]">
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue className="capitalize" placeholder="Select status" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="open_play">Open Play</SelectItem>
-                      <SelectItem value="club">Club</SelectItem>
+                    <SelectContent className="capitalize">
+                      <SelectItem value="Open Play">Open Play</SelectItem>
+                      <SelectItem value="Club">Club</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="booked">Booked</SelectItem>
                       <SelectItem value="closed">Closed</SelectItem>
@@ -299,31 +336,57 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
               )}
 
               <Field>
-                <Label htmlFor="court_id">Select Court *</Label>
-                <Select name="court_id" required value={selectedCourt} onValueChange={(value) => setSelectedCourt(value ?? "")}>
-                  <SelectTrigger className="h-11 focus-visible:ring-[#d4a24c]">
-                    <SelectValue>
-                      {selectedCourt
-                        ? courts.find((c) => c.court_id.toString() === selectedCourt)?.type ?? selectedCourt
-                        : <span className="text-muted-foreground">Select a court</span>}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
+                <Label>Select Court(s) *</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className={cn(
+                      buttonVariants({ variant: "outline" }),
+                      "w-full min-h-11 h-auto justify-start font-normal focus-visible:ring-[#d4a24c] flex-wrap gap-1.5 px-3 py-2"
+                    )}
+                  >
+                      {selectedCourts.length > 0
+                        ? selectedCourts.map((id) => {
+                            const courtName = courts.find((c) => c.court_id.toString() === id)?.type ?? id;
+                            return (
+                              <Badge key={id} variant="secondary" className="capitalize rounded-md bg-[#d4a24c]/10 text-[#d4a24c] hover:bg-[#d4a24c]/20 border-none font-semibold px-2 py-0.5 pointer-events-none">
+                                {courtName}
+                              </Badge>
+                            );
+                          })
+                        : <span className="text-muted-foreground">Select court(s)</span>}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="capitalize w-[var(--radix-dropdown-menu-trigger-width)]">
                     {courts.map((court) => {
-                      const isBooked = bookedCourtIds.has(court.court_id);
+                      const status = courtStatusMap.get(court.court_id);
+                      const disabled = !!status;
                       return (
-                        <SelectItem
+                        <DropdownMenuCheckboxItem
                           key={court.court_id}
-                          value={court.court_id.toString()}
-                          disabled={isBooked}
-                          className={isBooked ? "opacity-50 cursor-not-allowed" : ""}
+                          checked={selectedCourts.includes(court.court_id.toString())}
+                          disabled={disabled}
+                          className={disabled ? "opacity-50 cursor-not-allowed" : ""}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                          }}
+                          onCheckedChange={(checked) => {
+                            if (disabled) return;
+                            const val = court.court_id.toString();
+                            if (checked) {
+                              setSelectedCourts(prev => [...prev, val]);
+                            } else {
+                              setSelectedCourts(prev => prev.filter(id => id !== val));
+                            }
+                          }}
                         >
-                          {court.type}{isBooked ? " (Booked)" : ""}
-                        </SelectItem>
+                          {court.type} {status ? `(${status})` : ""}
+                        </DropdownMenuCheckboxItem>
                       );
                     })}
-                  </SelectContent>
-                </Select>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {selectedCourts.length === 0 && (
+                  <input type="text" className="h-0 w-0 opacity-0 absolute" required value="" onChange={()=>{}} />
+                )}
               </Field>
 
               <Field>
@@ -343,8 +406,8 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                 <Card className="bg-[#c9a55a]/10 border-[#c9a55a] border">
                   <CardContent>
                     <p className="text-xs">💸 Send your payment to</p>
-                    <p className="text-base font-bold">GCash 09293759815</p>
-                    <p>An***o S.</p>
+                    <p className="text-base font-bold">GCash:  {GcashNumber}</p> {/* 09293759815 */}
+                    <p>{GcashName}</p> {/* An***o S. */}
                     <p>
                       Then upload the screenshot below to confirm your booking.
                     </p>
@@ -367,21 +430,75 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                   />
                 </Field>
               )}
+
+               {formType === "edit" && editData?.bookings && (
+              <div className="mb-4 rounded-lg border border-border/50 bg-muted/10 p-4 text-sm space-y-2 mt-4">
+                <p className="font-semibold text-primary border-b pb-2 mb-2">Additional Details</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="text-muted-foreground">Extra Players:</div>
+                  <div className="font-medium">{editData.bookings.additional_players || '0'}</div>
+
+                  {editData.bookings.payment_proof && (
+                    <>
+                      <div className="text-muted-foreground">Proof of Payment:</div>
+                      <div>
+                        <a 
+                          href={`${process.env.NEXT_PUBLIC_API_URL || ""}/storage/${editData.bookings.payment_proof}`}
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[#d4a24c] hover:underline font-bold"
+                        >
+                          View Screenshot
+                        </a>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+              
+              
             </FieldGroup>
 
-            <DialogFooter className="mt-4 sm:justify-center flex-col gap-2">
+                        <DialogFooter className="mt-4 flex-col gap-2">
               {bookingError && (
                 <p className="w-full text-center text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
                   ⚠️ {bookingError}
                 </p>
               )}
-              <Button
-                type="submit"
-                className="w-full h-12 rounded-xl bg-[#d4a24c] font-bold text-primary hover:bg-[#e1b45f]"
-              >
-                {formType === "edit" ? "Save Edit" : "Submit booking"}
-              </Button>
+              
+              {/* ---> UPDATED BUTTONS <--- */}
+              {formType === "edit" ? (
+                <div className="flex w-full flex-row gap-3 mt-2">
+                  <Button
+                    type="submit"
+                    name="action"
+                    value="cancel_booking"
+                    variant="outline"
+                    className="flex-1 h-12 rounded-xl border-2 text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                  >
+                    Cancel Booking
+                  </Button>
+                  <Button
+                    type="submit"
+                    name="action"
+                    value="approve"
+                    className="flex-1 h-12 rounded-xl bg-[#d4a24c] font-bold text-white hover:bg-[#e1b45f]"
+                  >
+                    Approve
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="submit"
+                  className="w-full h-12 rounded-xl bg-[#d4a24c] font-bold text-white hover:bg-[#e1b45f]"
+                >
+                  Submit booking
+                </Button>
+              )}
             </DialogFooter>
+
           </form>
         </DialogContent>
       </Dialog>
@@ -420,7 +537,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
             <p className="text-xs font-bold border-t border-border py-2">
               Total sent: ₱{submittedTotal.toFixed(0)} · {customerName}
             </p>
-          </DialogHeader>
+             </DialogHeader>
 
           <div className="mx-auto text-center">
             <p className="text-xs">

@@ -55,19 +55,20 @@ export async function getSettings() {
   }
 }
 
-export async function updateHoursSettings(data: any) {
+export async function updateHoursSettings(formData: FormData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value;
+
+  formData.append('type','hours')
 
   try {
     const res = await fetch(`${API_BASE}/settings`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ type: 'hours', ...data }),
+      body: formData,
     });
 
     if (!res.ok) {

@@ -1,12 +1,22 @@
 import type { Metadata } from "next";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/admin/app-sidebar";
-import { getUser } from "@/app/admin/settings/actions";
+import { getUser, getSettings } from "@/app/admin/settings/actions";
 
-export const metadata: Metadata = {
-  title: "Admin Dashboard",
-  description: "Admin dashboard",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings();
+  const storeName = settings?.storeName || "Reservation System";
+  const storeLogo = settings?.StoreLogo;
+
+  return {
+    title: `${storeName} - Admin Dashboard`,
+    description: "Admin dashboard",
+    icons: {
+      icon: storeLogo || "/default-favicon.ico",
+      apple: storeLogo || "/default-favicon.ico",
+    },
+  };
+}
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const initialUser: any | null = await getUser();

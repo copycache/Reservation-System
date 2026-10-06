@@ -14,10 +14,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
 
   const storeName = settings?.storeName || "Reservation System";
+  const storeLogo = settings?.StoreLogo;
 
   return {
     title: `${storeName} - Live Availability`,
     description: "",
+    icons: {
+      icon: storeLogo || "/default-favicon.ico",
+      apple: storeLogo || "/default-favicon.ico",
+    },
   };
 }
 

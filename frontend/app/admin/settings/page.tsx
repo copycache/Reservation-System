@@ -29,11 +29,13 @@ import { getSettings, updateHoursSettings, updatePassword, updateUser } from "./
 export default function SettingsPage() {
   const [isPendingHours, startTransitionHours] = useTransition();
   const [isPendingUser, startTransitionUser] = useTransition();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [settings, setSettings] = useState<any>({
     storeName: "",
     GcashNumber: "",
     GcashName: "",
+    StoreLogo: ""
   });
 
   useEffect(() => {
@@ -48,8 +50,17 @@ export default function SettingsPage() {
 
   const handleSaveHours = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const formData = new FormData()
+    formData.append('storeName', settings.storeName)
+    formData.append('GcashNumber', settings.GcashNumber)
+    formData.append('GcashName', settings.GcashName)
+
+    if (selectedFile) {
+      formData.append('StoreLogo', selectedFile)
+    }
     startTransitionHours(async () => {
-      const result = await updateHoursSettings(settings);
+      const result = await updateHoursSettings(formData);
       if (result.success) {
         alert(result.message);
       } else {
@@ -72,9 +83,9 @@ export default function SettingsPage() {
         </div>
 
         <div className="grid gap-6">
-          {/* Operating Hours & Booking Rules */}
-          <Card>
-            <form onSubmit={handleSaveHours}>
+          <form onSubmit={handleSaveHours} className="space-y-6">
+            {/* Operating Hours & Booking Rules */}
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Clock className="w-5 h-5 text-primary" />
@@ -103,14 +114,46 @@ export default function SettingsPage() {
                 </div>
                 
               </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Store Logo</CardTitle>
+                <CardDescription>
+                  Upload a logo to be displayed on the website and in the browser tab.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="mt-4">
+                <div className="space-y-4">
+                  <Label htmlFor="StoreLogo">Select Image</Label>
+                  <Input 
+                    id="StoreLogo" 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} 
+                  />
+                  {settings.StoreLogo && !selectedFile && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium mb-2">Current Logo:</p>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={settings.StoreLogo} alt="Store Logo" className="w-24 h-24 object-cover rounded-lg border bg-white" />
+                    </div>
+                  )}
+                  {selectedFile && (
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Selected file: {selectedFile.name}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
               <CardFooter className="border-t pt-4 flex justify-end">
                 <Button type="submit" disabled={isPendingHours} className="gap-2">
                   <Save className="w-4 h-4" />
-                  {isPendingHours ? "Saving..." : "Save Rules"}
+                  {isPendingHours ? "Saving..." : "Save All Settings"}
                 </Button>
               </CardFooter>
-            </form>
-          </Card>
+            </Card>
+          </form>
 
         </div>
       </div>

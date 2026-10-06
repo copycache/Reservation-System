@@ -10,11 +10,15 @@ type HeaderProps = {
 export default function Header({ onRefresh }: HeaderProps) {
   const [lastUpdated, setLastUpdated] = useState(() => formatTime(new Date()));
   const [storeName, setStoreName] = useState("");
+  const [storeLogo, setStoreLogo] = useState("");
 
   useEffect(() => {
     getSettings().then((settings) => {
       if (settings?.storeName) {
         setStoreName(settings.storeName);
+      }
+      if (settings?.StoreLogo) {
+        setStoreLogo(settings.StoreLogo);
       }
     });
   }, []);
@@ -41,9 +45,18 @@ export default function Header({ onRefresh }: HeaderProps) {
           <p className="mb-1 text-xs font-semibold tracking-wide text-[#c9a55a]">
             LIVE AVAILABILITY
           </p>
-          <h1 className="text-3xl font-extrabold tracking-tight uppercase">
-            {storeName}
-          </h1>
+          <div className="flex items-center gap-3">
+            {storeLogo && (
+              <img 
+                src={storeLogo} 
+                alt={`${storeName} Logo`} 
+                className="w-10 h-10 rounded-full object-cover border border-muted"
+              />
+            )}
+            <h1 className="text-3xl font-extrabold tracking-tight uppercase">
+              {storeName}
+            </h1>
+          </div>
           <div className="mt-2 space-y-0.5 text-sm text-muted-foreground">
             <p>Open 8AM-10PM (til 12MN Fri &amp; Sat) · Max 10 players</p>
             <p>₱300/hr (8AM-3PM) | ₱400/hr (3PM-12MN)</p>

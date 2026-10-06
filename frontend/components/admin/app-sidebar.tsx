@@ -16,7 +16,10 @@ import {
   FileChartLine,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { ChevronsUpDown, User, GalleryVerticalEnd } from "lucide-react";
+import { ChevronsUpDown, User, GalleryVerticalEnd, LogOut } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 import {
   Collapsible,
@@ -38,7 +41,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  useSidebar
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -47,6 +50,7 @@ import {
   DropdownMenuItem,
 } from "../ui/dropdown-menu";
 import { getSettings } from "@/app/admin/settings/actions";
+import { logoutAction } from "@/app/auth/logout/action";
 import { PascalCase } from "@/lib/word_case";
 
 type Tab = {
@@ -105,7 +109,7 @@ const tabs: Tab[] = [
 ];
 
 export function AppSidebar({ initialUser }: { initialUser: any | null }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
   const pathname = usePathname();
   const [storeName, setStoreName] = useState("Reservation System");
   const [storeLogo, setStoreLogo] = useState("");
@@ -150,7 +154,11 @@ export function AppSidebar({ initialUser }: { initialUser: any | null }) {
                 {storeLogo ? (
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden border">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={storeLogo} alt="Logo" className="object-cover w-full h-full" />
+                    <img
+                      src={storeLogo}
+                      alt="Logo"
+                      className="object-cover w-full h-full"
+                    />
                   </div>
                 ) : (
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-600 text-white">
@@ -270,7 +278,7 @@ export function AppSidebar({ initialUser }: { initialUser: any | null }) {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* <SidebarFooter>
+      <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
@@ -286,7 +294,9 @@ export function AppSidebar({ initialUser }: { initialUser: any | null }) {
                   <User className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{PascalCase(user.name)}</span>
+                  <span className="truncate font-semibold">
+                    {PascalCase(user.name)}
+                  </span>
                   <span className="truncate text-xs text-muted-foreground">
                     {user.email}
                   </span>
@@ -295,14 +305,48 @@ export function AppSidebar({ initialUser }: { initialUser: any | null }) {
               </DropdownMenuTrigger>
 
               <DropdownMenuContent side={isMobile ? "bottom" : "right"}>
-                <DropdownMenuItem>
-                  <span>Acme Inc</span>
-                </DropdownMenuItem>
+                <div className="flex items-center gap-3 p-1">
+                  <div className="size-8 shrink-0 overflow-hidden rounded-full">
+                    {user.image ? (
+                      <img
+                        src={user.image}
+                        alt={user.name}
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex size-full items-center justify-center rounded-full bg-blue-600">
+                        <User className="size-4" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 leading-tight opacity-75">
+                    <div className="truncate text-sm font-semibold">
+                      {PascalCase(user.name)}
+                    </div>
+                    <div className="truncate text-xs text-gray-400">
+                      {user.email}
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="my-1" />
+
+                <form action={logoutAction} className="w-full">
+                  <Button
+                    type="submit"
+                    variant="ghost"
+                    className="w-full justify-start"
+                  >
+                    <LogOut />
+                    <span>Log out</span>
+                  </Button>
+                </form>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
-      </SidebarFooter> */}
+      </SidebarFooter>
     </Sidebar>
   );
 }

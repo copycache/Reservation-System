@@ -108,6 +108,7 @@ export function AppSidebar({ initialUser }: { initialUser: any | null }) {
   const { isMobile } = useSidebar()
   const pathname = usePathname();
   const [storeName, setStoreName] = useState("Reservation System");
+  const [storeLogo, setStoreLogo] = useState("");
   const [user, setUser] = useState<any | null>(initialUser);
 
   const [openMenus, setOpenMenus] = useState({
@@ -118,6 +119,9 @@ export function AppSidebar({ initialUser }: { initialUser: any | null }) {
     getSettings().then((settings) => {
       if (settings?.storeName) {
         setStoreName(settings.storeName);
+      }
+      if (settings?.StoreLogo) {
+        setStoreLogo(settings.StoreLogo);
       }
     });
   }, []);
@@ -143,9 +147,16 @@ export function AppSidebar({ initialUser }: { initialUser: any | null }) {
                   />
                 }
               >
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-600 text-white">
-                  <GalleryVerticalEnd className="size-4" />
-                </div>
+                {storeLogo ? (
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={storeLogo} alt="Logo" className="object-cover w-full h-full" />
+                  </div>
+                ) : (
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+                    <GalleryVerticalEnd className="size-4" />
+                  </div>
+                )}
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{storeName}</span>
                   <span className="truncate text-xs text-muted-foreground">

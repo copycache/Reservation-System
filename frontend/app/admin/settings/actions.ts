@@ -2,7 +2,33 @@
 
 import { cookies } from "next/headers";
 
-const API_BASE = "http://127.0.0.1:8000/api/admin";
+const API_URL = "http://127.0.0.1:8000/api";
+const API_BASE = `${API_URL}/admin`;
+
+export async function getUser() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
+
+  try {
+    const res = await fetch(`${API_URL}/user`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch user.");
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return null;
+  }
+}
 
 export async function getSettings() {
   const cookieStore = await cookies();

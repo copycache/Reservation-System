@@ -16,6 +16,7 @@ import {
   FileChartLine,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ChevronsUpDown, User, GalleryVerticalEnd } from "lucide-react";
 
 import {
   Collapsible,
@@ -37,8 +38,16 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "../ui/dropdown-menu";
 import { getSettings } from "@/app/admin/settings/actions";
+import { PascalCase } from "@/lib/word_case";
 
 type Tab = {
   title: string;
@@ -95,9 +104,11 @@ const tabs: Tab[] = [
   },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ initialUser }: { initialUser: any | null }) {
+  const { isMobile } = useSidebar()
   const pathname = usePathname();
   const [storeName, setStoreName] = useState("Reservation System");
+  const [user, setUser] = useState<any | null>(initialUser);
 
   const [openMenus, setOpenMenus] = useState({
     Reports: true,
@@ -120,7 +131,39 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader />
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <SidebarMenuButton
+                    size="lg"
+                    className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
+                  />
+                }
+              >
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+                  <GalleryVerticalEnd className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">{storeName}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {/* Enterprise */}
+                  </span>
+                </div>
+                <ChevronsUpDown className="ml-auto size-4" />
+              </DropdownMenuTrigger>
+
+              {/* <DropdownMenuContent>
+                <DropdownMenuItem>
+                  <span>Acme Inc</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent> */}
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
@@ -216,15 +259,39 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      {/* <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton>
-              {storeName}
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <SidebarMenuButton
+                    size="lg"
+                    className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
+                  />
+                }
+              >
+                <div className="flex aspect-square size-8 items-center justify-center rounded-full bg-blue-600 text-white">
+                  <User className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">{PascalCase(user.name)}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {user.email}
+                  </span>
+                </div>
+                <ChevronsUpDown className="ml-auto size-4" />
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent side={isMobile ? "bottom" : "right"}>
+                <DropdownMenuItem>
+                  <span>Acme Inc</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
-      </SidebarFooter>
+      </SidebarFooter> */}
     </Sidebar>
   );
 }

@@ -475,8 +475,8 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                     type="submit"
                     name="action"
                     value="cancel_booking"
-                    variant="outline"
-                    className="flex-1 h-12 rounded-xl border-2 text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                    variant="destructive"
+                    className="flex-1 h-12 rounded-xl"
                   >
                     Cancel Booking
                   </Button>

@@ -49,7 +49,7 @@ export default function BookingPage() {
           <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
             <TabsList
               variant="default"
-              className="order-2 h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-0 lg:order-1 lg:w-auto"
+              className="order-2 h-auto w-full justify-start gap-1 bg-transparent p-0 lg:order-1 lg:w-auto"
             >
               <TabsTrigger value="all">All bookings</TabsTrigger>
               <TabsTrigger value="pending">Pending</TabsTrigger>

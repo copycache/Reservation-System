@@ -12,8 +12,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: `${storeName} - Admin Dashboard`,
     description: "Admin dashboard",
     icons: {
-      icon: storeLogo || "/default-favicon.ico",
-      apple: storeLogo || "/default-favicon.ico",
+      icon: storeLogo,
+      apple: storeLogo,
     },
   };
 }

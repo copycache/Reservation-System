@@ -46,7 +46,7 @@ export function BigCalendar() {
   async function fetchBookings() {
     try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/booking`
+          "/api/admin/booking"
         );
         if (!response.ok) throw new Error("Failed to fetch bookings");
         

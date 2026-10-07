@@ -85,7 +85,7 @@ export function DayCalendar({ date, courtId }: DayCalendarProps) {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/dashboard_bookings`,
+        "/api/admin/dashboard_bookings",
       );
 
       if (!response.ok) {

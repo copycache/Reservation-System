@@ -46,7 +46,7 @@ export async function loginAction(
 
   cookieStore.set("auth_token", data.token, {
     httpOnly: true,
-    secure: false,
+    secure: secureCookies,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
@@ -55,7 +55,7 @@ export async function loginAction(
   const role = data.role?.[0] ?? "user";
   cookieStore.set("user_role", role, {
     httpOnly: true,
-    secure: false,
+    secure: secureCookies,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,

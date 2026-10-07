@@ -20,7 +20,7 @@ export function ViewBooking({ bookingId, ontableReload }: ViewProps) {
   const loadBookingSlots = useCallback(async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/booking/${bookingId}`,
+        `/api/admin/booking/${bookingId}`,
       );
       const data = await response.json();
       setBooking(data);
@@ -36,7 +36,7 @@ export function ViewBooking({ bookingId, ontableReload }: ViewProps) {
   const handleBookingAction = async (action: "approve" | "disapprove") => {
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/booking/${bookingId}`, {
+      const response = await fetch(`/api/admin/booking/${bookingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),

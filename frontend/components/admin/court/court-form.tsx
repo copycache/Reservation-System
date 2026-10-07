@@ -59,7 +59,7 @@ export function CourtForm({
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/courts/${courtId}`,
+        `/api/admin/courts/${courtId}`,
       );
 
       const result = await response.json();
@@ -98,8 +98,8 @@ export function CourtForm({
 
     try {
       const url = isCreate
-        ? `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/courts`
-        : `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/courts/${courtId}`;
+        ? `/api/admin/courts`
+        : `/api/admin/courts/${courtId}`;
 
       const response = await fetch(url, {
         method: isCreate ? "POST" : "PUT",

@@ -36,12 +36,10 @@ class SettingsController extends Controller {
             $data = $request->only(['storeName', 'GcashNumber', 'GcashName']);
 
             if ($request->hasFile('StoreLogo')) {
-                $path = $request->file('StoreLogo')->store('store_logos', 'public');
+                $path = $request->file('StoreLogo')->store('settings_images', 'public');
 
-                // Save old logo path to delete it later
                 $oldPath = Setting::where('key', 'StoreLogo')->value('value');
 
-                // Delete old logo if exists
                 if ($oldPath && Storage::disk('public')->exists($oldPath)) {
                     Storage::disk('public')->delete($oldPath);
                 }

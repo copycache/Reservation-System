@@ -46,13 +46,6 @@ export default function Header({ onRefresh }: HeaderProps) {
             LIVE AVAILABILITY
           </p>
           <div className="flex items-center gap-3">
-            {storeLogo && (
-              <img 
-                src={storeLogo} 
-                alt={`${storeName} Logo`} 
-                className="w-10 h-10 rounded-full object-cover border border-muted"
-              />
-            )}
             <h1 className="text-3xl font-extrabold tracking-tight uppercase">
               {storeName}
             </h1>

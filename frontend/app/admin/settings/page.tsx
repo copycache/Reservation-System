@@ -62,18 +62,13 @@ export default function SettingsPage() {
     startTransitionHours(async () => {
       const result = await updateHoursSettings(formData);
       if (result.success) {
-        alert(result.message);
-      } else {
-        alert("Failed to save: " + result.message);
+        window.location.reload();
       }
     });
   };
 
-
-
-
   return (
-    <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 bg-muted/20">
+    <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>

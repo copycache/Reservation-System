@@ -7,6 +7,8 @@ export type LoginState = {
   error?: string;
 };
 
+const secureCookies = process.env.COOKIE_SECURE === "false" ? false : process.env.NODE_ENV === "production";
+
 export async function loginAction(
   _prevState: LoginState,
   formData: FormData
@@ -21,7 +23,7 @@ export async function loginAction(
   let data: { token?: string; role?: string[]; message?: string };
 
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/login", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ email, password }),
@@ -44,7 +46,7 @@ export async function loginAction(
 
   cookieStore.set("auth_token", data.token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: secureCookies,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
@@ -52,8 +54,8 @@ export async function loginAction(
 
   const role = data.role?.[0] ?? "user";
   cookieStore.set("user_role", role, {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    secure: secureCookies,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,

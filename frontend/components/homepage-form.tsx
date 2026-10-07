@@ -62,7 +62,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
   useEffect(() => {
     async function loadCourts() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/public/courts`);
+        const res = await fetch("/api/public/courts");
         if (res.ok) {
           const courtsData = await res.json();
           setCourts(courtsData);
@@ -165,7 +165,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
       
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/dashboard_bookings/${editData.booking_slot_id}`,
+          `/api/admin/dashboard_bookings/${editData.booking_slot_id}`,
           {
             method: "PUT",
             headers: {
@@ -211,8 +211,8 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
     }
 
     const apiUrl = formType === "homepage"
-      ? `${process.env.NEXT_PUBLIC_API_URL || ""}/api/home_bookings`
-      : `${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/dashboard_bookings`;
+      ? "/api/home_bookings"
+      : "/api/admin/dashboard_bookings";
 
     try {
       const response = await fetch(apiUrl, {

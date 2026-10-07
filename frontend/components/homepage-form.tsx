@@ -46,7 +46,7 @@ type BookingFormProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
-  triggerElement?: React.ReactNode;
+  triggerElement?: React.ReactElement;
   editData?: any;
   defaultCourtId?: string | number;
 };
@@ -306,9 +306,9 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                 )}
               </div>
 
-              {slots.map((slot) => (
+              {Array.from(data.entries()).map(([slotKey, slot]) => (
                 <div
-                  key={`${slot.date}-${slot.start_time}`}
+                  key={slotKey}
                   className="text-xs text-muted-foreground pb-1"
                 >
                   {formatDate(slot.date)} · {formatTime(slot.start_time)}-

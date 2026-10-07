@@ -20,8 +20,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: `${storeName} - Live Availability`,
     description: "",
     icons: {
-      icon: storeLogo || "/default-favicon.ico",
-      apple: storeLogo || "/default-favicon.ico",
+      icon: storeLogo || "/favicon.ico",
+      apple: storeLogo || "/favicon.ico",
     },
   };
 }

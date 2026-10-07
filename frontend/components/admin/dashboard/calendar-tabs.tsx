@@ -52,7 +52,7 @@ const timeSlots = [
 const statusStyles: Record<string, string> = {
   Open: "border border-green-500/70 bg-green-500/10 text-green-400",
   "Open Play": "border border-blue-500/70 bg-blue-500/10 text-blue-400",
-  Booked: "border border-gray-500/70 bg-gray-500/10 text-gray-400",
+  Confirmed: "border border-gray-500/70 bg-gray-500/10 text-gray-400",
   Club: "border border-violet-500/70 bg-violet-500/10 text-violet-400",
   Pending: "border border-amber-500/70 bg-amber-500/10 text-amber-400",
   Closed: "border border-red-500/70 bg-red-500/10 text-red-400",
@@ -127,9 +127,11 @@ export function DayCalendar({ date, courtId }: DayCalendarProps) {
       return isPast ? "--" : "Open";
     }
 
-    switch (slot.status) {
+    const effectiveStatus = slot.bookings?.status === "approved" ? "booked" : slot.status;
+
+    switch (effectiveStatus) {
       case "booked":
-        return "Booked";
+        return "Confirmed";
       case "open_play":
         return "Open Play";
       case "club":

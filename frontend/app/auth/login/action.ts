@@ -7,6 +7,8 @@ export type LoginState = {
   error?: string;
 };
 
+const secureCookies = process.env.COOKIE_SECURE === "false" ? false : process.env.NODE_ENV === "production";
+
 export async function loginAction(
   _prevState: LoginState,
   formData: FormData
@@ -44,7 +46,7 @@ export async function loginAction(
 
   cookieStore.set("auth_token", data.token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: secureCookies,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
@@ -53,7 +55,7 @@ export async function loginAction(
   const role = data.role?.[0] ?? "user";
   cookieStore.set("user_role", role, {
     httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
+    secure: secureCookies,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,

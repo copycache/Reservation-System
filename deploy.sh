@@ -35,6 +35,7 @@ npm run build
 
 echo "===== Restarting applications ====="
 
-pm2 restart ecosystem.config.cjs
+pm2 restart reservation-API
+pm2 restart reservation-frontend
 
 echo "===== Deployment completed ====="

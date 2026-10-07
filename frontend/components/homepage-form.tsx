@@ -62,7 +62,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
   useEffect(() => {
     async function loadCourts() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/public/courts`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/public/courts`);
         if (res.ok) {
           const courtsData = await res.json();
           setCourts(courtsData);

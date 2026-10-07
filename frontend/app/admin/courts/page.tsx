@@ -31,7 +31,7 @@ export default function CourtPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const courtsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/admin/courts`);
+      const courtsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/courts`);
       const courtsData = await courtsRes.json();
       setCourts(courtsData);
 

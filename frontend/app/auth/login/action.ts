@@ -54,7 +54,7 @@ export async function loginAction(
 
   const role = data.role?.[0] ?? "user";
   cookieStore.set("user_role", role, {
-    httpOnly: false,
+    httpOnly: true,
     secure: false,
     sameSite: "lax",
     path: "/",

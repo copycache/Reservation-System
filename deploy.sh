@@ -14,7 +14,7 @@ git pull origin main
 echo "===== Updating Laravel ====="
 cd "$PROJECT/backend"
 
-composer install --no-dev --optimize-autoloader
+composer install --no-dev --optimize-autoloader -y
 
 php artisan config:clear
 php artisan cache:clear

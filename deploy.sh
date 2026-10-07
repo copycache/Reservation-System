@@ -2,6 +2,8 @@
 
 set -e
 
+export COMPOSER_ALLOW_SUPERUSER=1
+
 PROJECT="/var/www/reservation-system"
 
 echo "===== Starting deployment ====="
@@ -14,7 +16,7 @@ git pull origin main
 echo "===== Updating Laravel ====="
 cd "$PROJECT/backend"
 
-composer install --no-dev --optimize-autoloader -y
+composer install --no-dev --optimize-autoloader
 
 php artisan config:clear
 php artisan cache:clear

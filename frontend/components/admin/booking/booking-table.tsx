@@ -14,9 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-
-import { ViewBooking } from "@/components/admin/booking/view-booking";
+import { HomepageForm } from "@/components/homepage-form";
+import { Button } from "@/components/ui/button";
 
 import { formatDate } from "@/lib/format_date";
 import { formatTime } from "@/lib/format_time";
@@ -211,16 +210,43 @@ export function BookingTable({ tabValue, searchQuery, bookings, loadBookingSlots
                       <StatusLegend status={booking.status} />
                     </TableCell>
                     <TableCell className="w-[100px] px-4 text-center">
-                      <Dialog>
-                        <DialogTrigger>
-                          <span className="size-7 [&_svg:not([class*='size-'])]:size-3.5">
+                      <HomepageForm
+                        formType="edit"
+                        onBookingSubmitted={loadBookingSlots}
+                        hideTrigger={false}
+                        triggerElement={
+                          <Button 
+                            type="button" 
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 [&_svg:not([class*='size-'])]:size-3.5 cursor-pointer hover:opacity-80 inline-flex items-center justify-center rounded-md"
+                          >
                             <Eye />
-                          </span>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <ViewBooking bookingId={booking.booking_id} ontableReload={loadBookingSlots}/>
-                        </DialogContent>
-                      </Dialog>
+                          </Button>
+                        }
+                        data={
+                          new Map(
+                            booking.booking_slots?.map((slot: any) => [
+                              `${slot.date}-${slot.start_time}-${slot.court_id}`,
+                              {
+                                date: slot.date,
+                                start_time: slot.start_time,
+                                end_time: slot.end_time,
+                                subtotal: parseFloat(slot.price || "0"),
+                              },
+                            ]) || []
+                          )
+                        }
+                        editData={{
+                          slots: booking.booking_slots || [],
+                          booking_slot_id: booking.booking_slots?.[0]?.booking_slot_id || booking.booking_slots?.[0]?.id,
+                          court_id: booking.booking_slots?.[0]?.court_id,
+                          status: booking.status === "approved" ? "booked" : (booking.status || booking.booking_slots?.[0]?.status),
+                          date: booking.booking_slots?.[0]?.date,
+                          start_time: booking.booking_slots?.[0]?.start_time,
+                          bookings: booking,
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

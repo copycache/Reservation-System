@@ -34,6 +34,7 @@ type CalendarEvent = {
   courtType: string;
   status: string;
   rawSlot?: any;
+  rawSlots?: any[];
   rawBooking?: any;
 };
 
@@ -55,16 +56,27 @@ export function BigCalendar() {
         const newEvents: CalendarEvent[] = [];
         data.forEach((booking: any) => {
           if (booking.status !== "cancelled" && booking.booking_slots) {
-            booking.booking_slots.forEach((slot: any) => {
+            const dates: string[] = Array.from(new Set(booking.booking_slots.map((s: any) => s.date)));
+
+            dates.forEach(date => {
+              const slots = booking.booking_slots.filter((s: any) => s.date === date);
+              
+              slots.sort((a: any, b: any) => a.start_time.localeCompare(b.start_time));
+              
+              const timeStr = slots.map((s: any) => `${formatTime(s.start_time, true)} - ${formatTime(s.end_time, true)}`).join(', ');
+              
+              const courtNames = Array.from(new Set(slots.map((s: any) => s.court?.court_name).filter(Boolean))).join(', ');
+              const courtTypes = Array.from(new Set(slots.map((s: any) => s.court?.type).filter(Boolean))).join(', ');
+
               newEvents.push({
-                id: slot.booking_slot_id || slot.id || Math.random().toString(),
-                date: slot.date, // Format from API should be YYYY-MM-DD
+                id: (slots[0].booking_slot_id || slots[0].id || Math.random().toString()) + "-merged",
+                date: date,
                 title: booking.customers?.name || "Unknown",
-                time: `${formatTime(slot.start_time, true)} - ${formatTime(slot.end_time, true)}`,
-                court: slot.court?.court_name || "Court",
-                courtType: slot.court?.type || "",
-                status: slot.status,
-                rawSlot: slot,
+                time: timeStr,
+                court: courtNames || "Court",
+                courtType: courtTypes,
+                status: booking.status === "approved" ? "booked" : (booking.status || slots[0].status),
+                rawSlots: slots,
                 rawBooking: booking,
               });
             });
@@ -239,7 +251,7 @@ export function BigCalendar() {
                                     event.status === "pending" ? "bg-yellow-500/20 text-yellow-700" :
                                     "bg-black/10 text-black/70 dark:bg-white/10 dark:text-white/70"
                                   }`}>
-                                    {event.status}
+                                    {event.status === "booked" ? "Confirmed" : event.status}
                                   </span>
                                 )}
                               </div>
@@ -269,20 +281,33 @@ export function BigCalendar() {
             fetchBookings();
             setIsEditOpen(false);
           }}
-          data={new Map([
-            ["slot", {
-              date: selectedEvent.rawSlot.date,
-              start_time: selectedEvent.rawSlot.start_time,
-              end_time: selectedEvent.rawSlot.end_time,
-              subtotal: parseFloat(selectedEvent.rawSlot.price || "0")
-            }]
-          ])}
+          data={
+            selectedEvent.rawSlots 
+              ? new Map(selectedEvent.rawSlots.map((slot: any) => [
+                  `${slot.date}-${slot.start_time}-${slot.court_id}`, 
+                  {
+                    date: slot.date,
+                    start_time: slot.start_time,
+                    end_time: slot.end_time,
+                    subtotal: parseFloat(slot.price || "0")
+                  }
+                ]))
+              : new Map([
+                  ["slot", {
+                    date: selectedEvent.rawSlot.date,
+                    start_time: selectedEvent.rawSlot.start_time,
+                    end_time: selectedEvent.rawSlot.end_time,
+                    subtotal: parseFloat(selectedEvent.rawSlot.price || "0")
+                  }]
+                ])
+          }
           editData={{
-            booking_slot_id: selectedEvent.rawSlot.booking_slot_id || selectedEvent.rawSlot.id,
-            court_id: selectedEvent.rawSlot.court_id,
-            status: selectedEvent.rawSlot.status,
-            date: selectedEvent.rawSlot.date,
-            start_time: selectedEvent.rawSlot.start_time,
+            slots: selectedEvent.rawSlots || [selectedEvent.rawSlot],
+            booking_slot_id: selectedEvent.rawSlots ? (selectedEvent.rawSlots[0].booking_slot_id || selectedEvent.rawSlots[0].id) : (selectedEvent.rawSlot.booking_slot_id || selectedEvent.rawSlot.id),
+            court_id: selectedEvent.rawSlots ? selectedEvent.rawSlots[0].court_id : selectedEvent.rawSlot.court_id,
+            status: selectedEvent.rawSlots ? selectedEvent.rawSlots[0].status : selectedEvent.rawSlot.status,
+            date: selectedEvent.rawSlots ? selectedEvent.rawSlots[0].date : selectedEvent.rawSlot.date,
+            start_time: selectedEvent.rawSlots ? selectedEvent.rawSlots[0].start_time : selectedEvent.rawSlot.start_time,
             bookings: selectedEvent.rawBooking
           }}
         />

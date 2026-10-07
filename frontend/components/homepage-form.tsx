@@ -46,11 +46,12 @@ type BookingFormProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
+  triggerElement?: React.ReactNode;
   editData?: any;
   defaultCourtId?: string | number;
 };
 
-export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, formType, open: controlledOpen, onOpenChange: setControlledOpen, hideTrigger, editData, defaultCourtId }: BookingFormProps) {
+export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, formType, open: controlledOpen, onOpenChange: setControlledOpen, hideTrigger, triggerElement, editData, defaultCourtId }: BookingFormProps) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [courts, setCourts] = useState<any[]>([]);
@@ -86,7 +87,12 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
 
   useEffect(() => {
     if (formType === "edit" && editData) {
-      if (editData.court_id) setSelectedCourts([editData.court_id.toString()]);
+      if (editData.slots && editData.slots.length > 1) {
+        const allCourtIds = editData.slots.map((s: any) => s.court_id.toString());
+        setSelectedCourts(Array.from(new Set(allCourtIds)));
+      } else if (editData.court_id) {
+        setSelectedCourts([editData.court_id.toString()]);
+      }
       if (editData.status) setSelectedStatus(editData.status);
     } else {
       setSelectedStatus("");
@@ -158,35 +164,40 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
     }
     
     if (formType === "edit" && editData) {
-      formData.append("status", finalStatus);
-      formData.append("court_id", selectedCourts[0] || "");
-      selectedCourts.forEach((id) => formData.append("court_ids[]", id));
-      formData.append("court_ids", JSON.stringify(selectedCourts));
-      
       try {
-        const response = await fetch(
-          `/api/admin/dashboard_bookings/${editData.booking_slot_id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              name,
-              fb_name: fbName,
-              email,
-              status: finalStatus,
-              court_id: selectedCourts[0] || "",
-              court_ids: selectedCourts,
-            }),
-          },
-        );
+        const slotsToUpdate = editData.slots || [{
+          booking_slot_id: editData.booking_slot_id,
+          court_id: selectedCourts[0] || "",
+          id: editData.booking_slot_id
+        }];
+        
+        await Promise.all(slotsToUpdate.map(async (slot: any) => {
+          const slotId = slot.booking_slot_id || slot.id;
+          const courtId = slotsToUpdate.length > 1 ? slot.court_id : (selectedCourts[0] || "");
+          
+          const response = await fetch(
+            `/api/admin/dashboard_bookings/${slotId}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                name,
+                fb_name: fbName,
+                email,
+                status: finalStatus,
+                court_id: courtId,
+                court_ids: slotsToUpdate.length > 1 ? [courtId] : selectedCourts,
+              }),
+            }
+          );
 
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result?.message || "Failed to update booking");
-        }
+          if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result?.message || "Failed to update booking");
+          }
+        }));
         
         onBookingSubmitted();
         if (setControlledOpen) setControlledOpen(false);
@@ -257,13 +268,17 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
         {!hideTrigger && (
           <DialogTrigger
             render={
-              <Button
-                size="lg"
-                disabled={data.size === 0}
-                className="px-8 py-6 cursor-pointer bg-[#d4a24c] text-white font-bold hover:bg-[#e1b45f]"
-              >
-                Book my slot →
-              </Button>
+              triggerElement ? (
+                triggerElement
+              ) : (
+                <Button
+                  size="lg"
+                  disabled={data.size === 0}
+                  className="px-8 py-6 cursor-pointer bg-[#d4a24c] text-white font-bold hover:bg-[#e1b45f]"
+                >
+                  Book my slot →
+                </Button>
+              )
             }
           />
         )}
@@ -271,9 +286,25 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
         <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-md">
           <form onSubmit={handleSubmit}>
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold pb-3">
-                Confirm your booking
-              </DialogTitle>
+              <div className="flex items-start justify-between pr-6">
+                <DialogTitle className="text-lg font-semibold pb-3">
+                  Confirm your booking
+                </DialogTitle>
+                {formType === "edit" && selectedStatus && (
+                  <Badge 
+                    variant="outline"
+                    className={cn(
+                      "capitalize font-bold border-transparent",
+                      selectedStatus === "booked" ? "bg-green-500/20 text-green-700" :
+                      selectedStatus === "cancelled" ? "bg-red-500/20 text-red-700" :
+                      selectedStatus === "pending" ? "bg-yellow-500/20 text-yellow-700" :
+                      "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {selectedStatus === "booked" ? "Confirmed" : selectedStatus}
+                  </Badge>
+                )}
+              </div>
 
               {slots.map((slot) => (
                 <div
@@ -301,6 +332,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                   defaultValue={formType === "edit" ? editData?.bookings?.customers?.name || "" : ""}
                   className="h-11 focus-visible:ring-[#d4a24c]"
                   required
+                  readOnly={formType === "edit"}
                 />
               </Field>
 
@@ -313,10 +345,11 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                    placeholder="So we can reach you on Messenger"
                    className="h-11 focus-visible:ring-[#d4a24c]"
                    required
+                   readOnly={formType === "edit"}
                  />
                </Field>
 
-              {formType !== "homepage" && (
+              {formType !== "homepage" && formType !== "edit" && (
                 <Field>
                   <Label htmlFor="status">Booking Status *</Label>
                   <Select name="status" required value={selectedStatus} onValueChange={(value) => setSelectedStatus(value ?? "")}>
@@ -339,9 +372,11 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                 <Label>Select Court(s) *</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger
+                    disabled={formType === "edit"}
                     className={cn(
                       buttonVariants({ variant: "outline" }),
-                      "w-full min-h-11 h-auto justify-start font-normal focus-visible:ring-[#d4a24c] flex-wrap gap-1.5 px-3 py-2"
+                      "w-full min-h-11 h-auto justify-start font-normal focus-visible:ring-[#d4a24c] flex-wrap gap-1.5 px-3 py-2",
+                      formType === "edit" ? "opacity-70 cursor-not-allowed" : ""
                     )}
                   >
                       {selectedCourts.length > 0
@@ -399,6 +434,7 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                   placeholder="Your receipt goes here"
                   className="h-11 focus-visible:ring-[#d4a24c]"
                   required
+                  readOnly={formType === "edit"}
                 />
               </Field>
 
@@ -437,23 +473,20 @@ export function HomepageForm({ data, bookingSlots = [], onBookingSubmitted, form
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="text-muted-foreground">Extra Players:</div>
                   <div className="font-medium">{editData.bookings.additional_players || '0'}</div>
-
-                  {editData.bookings.payment_proof && (
-                    <>
-                      <div className="text-muted-foreground">Proof of Payment:</div>
-                      <div>
-                        <a 
-                          href={`${process.env.NEXT_PUBLIC_API_URL || ""}/storage/${editData.bookings.payment_proof}`}
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="text-[#d4a24c] hover:underline font-bold"
-                        >
-                          View Screenshot
-                        </a>
-                      </div>
-                    </>
-                  )}
                 </div>
+
+                {editData.bookings.payment_proof ? (
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <div className="text-muted-foreground text-xs mb-2">Proof of Payment:</div>
+                    <div className="block rounded-md overflow-hidden border border-border">
+                      <img 
+                        src={`${process.env.NEXT_PUBLIC_API_URL || ""}/storage/${editData.bookings.payment_proof}`}
+                        alt="Payment Proof"
+                        className="w-full max-h-[250px] object-contain bg-black/5 dark:bg-white/5"
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </div>
             )}
 

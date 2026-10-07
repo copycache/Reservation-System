@@ -139,12 +139,24 @@ class DashboardController extends Controller
             'court_id' => $validated['court_id'],
         ]);
 
-        if ($bookingSlot->bookings && $bookingSlot->bookings->customers) {
-            $bookingSlot->bookings->customers->update([
-                'name' => $validated['name'],
-                'facebook_name' => $validated['fb_name'] ?? '',
-                'email' => $validated['email'],
+        if ($bookingSlot->bookings) {
+            $bookingStatus = $validated['status'];
+            if ($bookingStatus === 'booked') {
+                $bookingStatus = 'approved';
+            }
+            
+            $bookingSlot->bookings->update([
+                'status' => $bookingStatus,
+                'payment_status' => $bookingStatus === 'approved' ? 'approved' : ($bookingStatus === 'cancelled' ? 'cancelled' : $bookingSlot->bookings->payment_status),
             ]);
+
+            if ($bookingSlot->bookings->customers) {
+                $bookingSlot->bookings->customers->update([
+                    'name' => $validated['name'],
+                    'facebook_name' => $validated['fb_name'] ?? '',
+                    'email' => $validated['email'],
+                ]);
+            }
         }
 
         return response()->json($bookingSlot->load('bookings.customers'));
